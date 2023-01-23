@@ -1,104 +1,60 @@
+mod device;
+mod pipeline;
+mod shaders;
+mod swapchain;
+mod vertex;
+
+use bytemuck::{Pod, Zeroable};
 use lyon::{
-    geom::{
-        euclid::{Point2D, UnknownUnit},
-        point, Transform,
-    },
+    geom::point,
     lyon_tessellation::{
         geometry_builder::simple_builder, FillOptions, FillTessellator, VertexBuffers,
     },
-    math::{Point, Vector},
+    math::Point,
     path::Path,
 };
-use miniquad::{
-    conf, Bindings, Buffer, BufferLayout, BufferType, Context, EventHandler, MouseButton, Pipeline,
-    Shader, VertexAttribute, VertexFormat,
+use vulkano::{
+    buffer::{BufferUsage, CpuAccessibleBuffer, TypedBufferAccess},
+    command_buffer::{
+        allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder, CommandBufferUsage,
+        RenderPassBeginInfo, SubpassContents,
+    },
+    device::{
+        physical::PhysicalDeviceType, Device, DeviceCreateInfo, DeviceExtensions, QueueCreateInfo,
+    },
+    image::{view::ImageView, ImageAccess, ImageUsage, SwapchainImage},
+    impl_vertex,
+    instance::{Instance, InstanceCreateInfo},
+    memory::allocator::StandardMemoryAllocator,
+    pipeline::{
+        graphics::{
+            input_assembly::InputAssemblyState,
+            vertex_input::BuffersDefinition,
+            viewport::{Viewport, ViewportState},
+        },
+        GraphicsPipeline,
+    },
+    render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass, Subpass},
+    swapchain::{
+        acquire_next_image, AcquireError, Swapchain, SwapchainCreateInfo, SwapchainCreationError,
+        SwapchainPresentInfo,
+    },
+    sync::{self, FlushError, GpuFuture},
+    VulkanLibrary,
+};
+use vulkano_win::VkSurfaceBuild;
+use winit::{
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::{Window, WindowBuilder},
 };
 
-struct Stage {
-    pipeline: Pipeline,
-    bindings: Bindings,
-    start_time: f64,
-    last_frame: f64,
-    uniforms: shader::Uniforms,
-}
-
-#[repr(C)]
-struct Vec2 {
-    x: f32,
-    y: f32,
-}
-
-impl From<Point2D<f32, UnknownUnit>> for Vec2 {
-    fn from(Point2D { x, y, .. }: Point2D<f32, UnknownUnit>) -> Self {
-        Vec2 { x, y }
-    }
-}
-
-#[repr(C)]
-struct Vertex {
-    pos: Vec2,
-}
-
-impl From<Vec2> for Vertex {
-    fn from(pos: Vec2) -> Self {
-        Vertex { pos }
-    }
-}
-
-impl Stage {
-    pub fn new(ctx: &mut Context, vertices: Vec<Vertex>, indices: Vec<u16>) -> Stage {
-        let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
-        let index_buffer = Buffer::immutable(ctx, BufferType::IndexBuffer, &indices);
-
-        let bindings = Bindings {
-            vertex_buffers: vec![vertex_buffer],
-            index_buffer,
-            images: vec![],
-        };
-
-        let shader = Shader::new(ctx, shader::VERTEX, shader::FRAGMENT, shader::meta()).unwrap();
-
-        let pipeline = Pipeline::new(
-            ctx,
-            &[BufferLayout::default()],
-            &[VertexAttribute::new("pos", VertexFormat::Float2)],
-            shader,
-        );
-
-        let uniforms = shader::Uniforms {
-            time: 0.,
-            blobs_count: 1,
-            blobs_positions: [(0., 0.); 32],
-        };
-
-        let time = miniquad::date::now();
-
-        Stage {
-            pipeline,
-            bindings,
-            start_time: time,
-            uniforms,
-            last_frame: time,
-        }
-    }
-}
-
-impl EventHandler for Stage {
-    fn update(&mut self, _ctx: &mut Context) {}
-
-    fn draw(&mut self, ctx: &mut Context) {
-        self.uniforms.time = (miniquad::date::now() - self.start_time) as f32;
-
-        ctx.begin_default_pass(Default::default());
-        ctx.apply_pipeline(&self.pipeline);
-        ctx.apply_bindings(&self.bindings);
-        ctx.apply_uniforms(&self.uniforms);
-        ctx.draw(0, 6, 1);
-        ctx.end_render_pass();
-
-        ctx.commit_frame();
-    }
-}
+use crate::{
+    pipeline::create_pipeline,
+    shaders::flat,
+    swapchain::{create_swapchain, window_size_dependent_setup},
+    vertex::Vertex,
+};
 
 fn build_path() -> Path {
     let mut path_builder = Path::builder();
@@ -120,13 +76,262 @@ fn tesselate_path(path: &Path) -> VertexBuffers<Point, u16> {
         let mut tessellator = FillTessellator::new();
 
         // Compute the tessellation.
-
         tessellator
             .tessellate_path(path, &FillOptions::default(), &mut vertex_builder)
             .unwrap();
     }
 
     buffers
+}
+
+fn vulkano_init(vertices: Vec<Vertex>) {
+    let library = VulkanLibrary::new().unwrap();
+    let required_extensions = vulkano_win::required_extensions(&library);
+
+    let instance = Instance::new(
+        library,
+        InstanceCreateInfo {
+            enabled_extensions: required_extensions,
+            enumerate_portability: true,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let event_loop = EventLoop::new();
+    let surface = WindowBuilder::new()
+        .build_vk_surface(&event_loop, instance.clone())
+        .unwrap();
+
+    let device_extensions = DeviceExtensions {
+        khr_swapchain: true,
+        ..DeviceExtensions::empty()
+    };
+
+    let (physical_device, queue_family_index) = instance
+        .enumerate_physical_devices()
+        .unwrap()
+        .filter(|p| p.supported_extensions().contains(&device_extensions))
+        .filter_map(|p| {
+            p.queue_family_properties()
+                .iter()
+                .enumerate()
+                .position(|(i, q)| {
+                    q.queue_flags.graphics && p.surface_support(i as u32, &surface).unwrap_or(false)
+                })
+                .map(|i| (p, i as u32))
+        })
+        .min_by_key(|(p, _)| match p.properties().device_type {
+            PhysicalDeviceType::DiscreteGpu => 0,
+            PhysicalDeviceType::IntegratedGpu => 1,
+            PhysicalDeviceType::VirtualGpu => 2,
+            PhysicalDeviceType::Cpu => 3,
+            PhysicalDeviceType::Other => 4,
+            _ => 5,
+        })
+        .expect("No suitable physical device found");
+
+    println!(
+        "Using device: {} (type: {:?})",
+        physical_device.properties().device_name,
+        physical_device.properties().device_type,
+    );
+
+    let (device, mut queues) = Device::new(
+        physical_device,
+        DeviceCreateInfo {
+            enabled_extensions: device_extensions,
+
+            queue_create_infos: vec![QueueCreateInfo {
+                queue_family_index,
+                ..Default::default()
+            }],
+
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let queue = queues.next().unwrap();
+
+    let (mut swapchain, images) = create_swapchain(device.clone(), surface.clone());
+
+    let memory_allocator = StandardMemoryAllocator::new_default(device.clone());
+
+    #[repr(C)]
+    #[derive(Clone, Copy, Debug, Default, Zeroable, Pod)]
+    struct Vertex {
+        position: [f32; 2],
+    }
+    impl_vertex!(Vertex, position);
+
+    let vertices = [
+        Vertex {
+            position: [-0.5, -0.25],
+        },
+        Vertex {
+            position: [0.0, 0.5],
+        },
+        Vertex {
+            position: [0.25, -0.1],
+        },
+    ];
+
+    let vertex_buffer = CpuAccessibleBuffer::from_iter(
+        &memory_allocator,
+        BufferUsage {
+            vertex_buffer: true,
+            ..BufferUsage::empty()
+        },
+        false,
+        vertices,
+    )
+    .unwrap();
+
+    let vs = flat::vs::load(device.clone()).unwrap();
+    let fs = flat::fs::load(device.clone()).unwrap();
+
+    let render_pass = vulkano::single_pass_renderpass!(
+        device.clone(),
+        attachments: {
+            color: {
+                load: Clear,
+                store: Store,
+                format: swapchain.image_format(),
+                samples: 1,
+            }
+        },
+        pass: {
+            color: [color],
+            depth_stencil: {}
+        }
+    )
+    .unwrap();
+
+    let pipeline = create_pipeline(render_pass.clone(), vs.clone(), fs.clone(), device.clone());
+
+    let mut viewport = Viewport {
+        origin: [0.0, 0.0],
+        dimensions: [0.0, 0.0],
+        depth_range: 0.0..1.0,
+    };
+
+    let mut framebuffers = window_size_dependent_setup(&images, render_pass.clone(), &mut viewport);
+
+    let command_buffer_allocator =
+        StandardCommandBufferAllocator::new(device.clone(), Default::default());
+
+    let mut recreate_swapchain = false;
+
+    let mut previous_frame_end = Some(sync::now(device.clone()).boxed());
+
+    event_loop.run(move |event, _, control_flow| match event {
+        Event::WindowEvent {
+            event: WindowEvent::CloseRequested,
+            ..
+        } => {
+            *control_flow = ControlFlow::Exit;
+        }
+        Event::WindowEvent {
+            event: WindowEvent::Resized(_),
+            ..
+        } => {
+            recreate_swapchain = true;
+        }
+        Event::RedrawEventsCleared => {
+            let window = surface.object().unwrap().downcast_ref::<Window>().unwrap();
+            let dimensions = window.inner_size();
+            if dimensions.width == 0 || dimensions.height == 0 {
+                return;
+            }
+
+            previous_frame_end.as_mut().unwrap().cleanup_finished();
+
+            if recreate_swapchain {
+                let (new_swapchain, new_images) = match swapchain.recreate(SwapchainCreateInfo {
+                    image_extent: dimensions.into(),
+                    ..swapchain.create_info()
+                }) {
+                    Ok(r) => r,
+                    Err(SwapchainCreationError::ImageExtentNotSupported { .. }) => return,
+                    Err(e) => panic!("Failed to recreate swapchain: {:?}", e),
+                };
+
+                swapchain = new_swapchain;
+                framebuffers =
+                    window_size_dependent_setup(&new_images, render_pass.clone(), &mut viewport);
+                recreate_swapchain = false;
+            }
+
+            let (image_index, suboptimal, acquire_future) =
+                match acquire_next_image(swapchain.clone(), None) {
+                    Ok(r) => r,
+                    Err(AcquireError::OutOfDate) => {
+                        recreate_swapchain = true;
+                        return;
+                    }
+                    Err(e) => panic!("Failed to acquire next image: {:?}", e),
+                };
+
+            if suboptimal {
+                recreate_swapchain = true;
+            }
+
+            let mut builder = AutoCommandBufferBuilder::primary(
+                &command_buffer_allocator,
+                queue.queue_family_index(),
+                CommandBufferUsage::OneTimeSubmit,
+            )
+            .unwrap();
+
+            builder
+                .begin_render_pass(
+                    RenderPassBeginInfo {
+                        clear_values: vec![Some([0.0, 0.0, 1.0, 1.0].into())],
+                        ..RenderPassBeginInfo::framebuffer(
+                            framebuffers[image_index as usize].clone(),
+                        )
+                    },
+                    SubpassContents::Inline,
+                )
+                .unwrap()
+                .set_viewport(0, [viewport.clone()])
+                .bind_pipeline_graphics(pipeline.clone())
+                .bind_vertex_buffers(0, vertex_buffer.clone())
+                .draw(vertex_buffer.len() as u32, 1, 0, 0)
+                .unwrap()
+                .end_render_pass()
+                .unwrap();
+
+            let command_buffer = builder.build().unwrap();
+
+            let future = previous_frame_end
+                .take()
+                .unwrap()
+                .join(acquire_future)
+                .then_execute(queue.clone(), command_buffer)
+                .unwrap()
+                .then_swapchain_present(
+                    queue.clone(),
+                    SwapchainPresentInfo::swapchain_image_index(swapchain.clone(), image_index),
+                )
+                .then_signal_fence_and_flush();
+
+            match future {
+                Ok(future) => {
+                    previous_frame_end = Some(future.boxed());
+                }
+                Err(FlushError::OutOfDate) => {
+                    recreate_swapchain = true;
+                    previous_frame_end = Some(sync::now(device.clone()).boxed());
+                }
+                Err(e) => {
+                    panic!("Failed to flush future: {:?}", e);
+                }
+            }
+        }
+        _ => (),
+    });
 }
 
 fn main() {
@@ -136,57 +341,10 @@ fn main() {
     let vertices = buffers
         .vertices
         .iter()
-        .map(|vertex| Vertex::from(Vec2::from(*vertex)))
+        .map(|vertex| Vertex::from(*vertex))
         .collect::<Vec<Vertex>>();
 
-    let indices = buffers.indices.to_vec();
+    // let indices = buffers.indices.to_vec();
 
-    for vert in buffers.vertices.iter() {
-        println!("{:?}", vert);
-    }
-
-    miniquad::start(conf::Conf::default(), |ctx| {
-        Box::new(Stage::new(ctx, vertices, indices))
-    });
-}
-
-mod shader {
-    use miniquad::*;
-
-    pub const VERTEX: &str = r#"#version 100
-    attribute vec2 pos;
-    attribute vec2 uv;
-    varying highp vec2 texcoord;
-    void main() {
-        gl_Position = vec4(pos, 0, 1);
-        texcoord = uv;
-    }"#;
-
-    pub const FRAGMENT: &str = r#"#version 100
-    precision highp float;
-    varying vec2 texcoord;
-    
-    void main() {
-        gl_FragColor = vec4( 1.0,0.5,1.0, 1.0 );
-    }"#;
-
-    pub fn meta() -> ShaderMeta {
-        ShaderMeta {
-            images: vec![],
-            uniforms: UniformBlockLayout {
-                uniforms: vec![
-                    UniformDesc::new("time", UniformType::Float1),
-                    UniformDesc::new("blobs_count", UniformType::Int1),
-                    UniformDesc::new("blobs_positions", UniformType::Float2).array(32),
-                ],
-            },
-        }
-    }
-
-    #[repr(C)]
-    pub struct Uniforms {
-        pub time: f32,
-        pub blobs_count: i32,
-        pub blobs_positions: [(f32, f32); 32],
-    }
+    vulkano_init(vertices);
 }
