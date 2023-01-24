@@ -4,10 +4,12 @@ use vulkano::{
     device::Device,
     pipeline::{
         graphics::{
-            input_assembly::InputAssemblyState, vertex_input::BuffersDefinition,
+            input_assembly::InputAssemblyState,
+            rasterization::{CullMode, RasterizationState},
+            vertex_input::BuffersDefinition,
             viewport::ViewportState,
         },
-        GraphicsPipeline,
+        GraphicsPipeline, StateMode,
     },
     render_pass::{RenderPass, Subpass},
     shader::ShaderModule,
@@ -21,6 +23,11 @@ pub fn create_pipeline(
     fs: Arc<ShaderModule>,
     device: Arc<Device>,
 ) -> Arc<GraphicsPipeline> {
+    let rasterization_state = RasterizationState {
+        cull_mode: StateMode::Fixed(CullMode::None),
+        ..Default::default()
+    };
+
     GraphicsPipeline::start()
         .render_pass(Subpass::from(render_pass, 0).unwrap())
         // We need to indicate the layout of the vertices.
@@ -32,6 +39,7 @@ pub fn create_pipeline(
         .vertex_shader(vs.entry_point("main").unwrap(), ())
         // Use a resizable viewport set to draw over the entire window
         .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
+        .rasterization_state(rasterization_state)
         // See `vertex_shader`.
         .fragment_shader(fs.entry_point("main").unwrap(), ())
         // Now that our builder is filled, we call `build()` to obtain an actual pipeline.

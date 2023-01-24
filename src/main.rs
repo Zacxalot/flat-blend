@@ -58,10 +58,10 @@ use crate::{
 
 fn build_path() -> Path {
     let mut path_builder = Path::builder();
-    path_builder.begin(point(0.0, 0.0));
-    path_builder.line_to(point(0.5, 1.0));
+    path_builder.begin(point(-1.0, 0.0));
+    path_builder.line_to(point(0.0, 1.0));
     path_builder.line_to(point(1.0, 0.0));
-    path_builder.line_to(point(0.5, 0.5));
+    path_builder.line_to(point(0.0, -1.0));
     path_builder.end(true);
     path_builder.build()
 }
@@ -84,7 +84,7 @@ fn tesselate_path(path: &Path) -> VertexBuffers<Point, u16> {
     buffers
 }
 
-fn vulkano_init(vertices: Vec<Vertex>) {
+fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
     let library = VulkanLibrary::new().unwrap();
     let required_extensions = vulkano_win::required_extensions(&library);
 
@@ -165,18 +165,6 @@ fn vulkano_init(vertices: Vec<Vertex>) {
     }
     impl_vertex!(Vertex, position);
 
-    let vertices = [
-        Vertex {
-            position: [-0.5, -0.25],
-        },
-        Vertex {
-            position: [0.0, 0.5],
-        },
-        Vertex {
-            position: [0.25, -0.1],
-        },
-    ];
-
     let vertex_buffer = CpuAccessibleBuffer::from_iter(
         &memory_allocator,
         BufferUsage {
@@ -185,6 +173,17 @@ fn vulkano_init(vertices: Vec<Vertex>) {
         },
         false,
         vertices,
+    )
+    .unwrap();
+
+    let index_buffer = CpuAccessibleBuffer::from_iter(
+        &memory_allocator,
+        BufferUsage {
+            index_buffer: true,
+            ..BufferUsage::empty()
+        },
+        false,
+        indices,
     )
     .unwrap();
 
@@ -208,7 +207,7 @@ fn vulkano_init(vertices: Vec<Vertex>) {
     )
     .unwrap();
 
-    let pipeline = create_pipeline(render_pass.clone(), vs.clone(), fs.clone(), device.clone());
+    let pipeline = create_pipeline(render_pass.clone(), vs, fs, device.clone());
 
     let mut viewport = Viewport {
         origin: [0.0, 0.0],
@@ -298,7 +297,8 @@ fn vulkano_init(vertices: Vec<Vertex>) {
                 .set_viewport(0, [viewport.clone()])
                 .bind_pipeline_graphics(pipeline.clone())
                 .bind_vertex_buffers(0, vertex_buffer.clone())
-                .draw(vertex_buffer.len() as u32, 1, 0, 0)
+                .bind_index_buffer(index_buffer.clone())
+                .draw_indexed(index_buffer.len() as u32, 1, 0, 0, 0)
                 .unwrap()
                 .end_render_pass()
                 .unwrap();
@@ -344,7 +344,7 @@ fn main() {
         .map(|vertex| Vertex::from(*vertex))
         .collect::<Vec<Vertex>>();
 
-    // let indices = buffers.indices.to_vec();
+    let indices = buffers.indices.to_vec();
 
-    vulkano_init(vertices);
+    vulkano_init(vertices, indices);
 }
