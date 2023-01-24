@@ -53,7 +53,7 @@ pub fn create_swapchain(
     let window = surface.object().unwrap().downcast_ref::<Window>().unwrap();
 
     Swapchain::new(
-        device.clone(),
+        device,
         surface.clone(),
         SwapchainCreateInfo {
             min_image_count: surface_capabilities.min_image_count,

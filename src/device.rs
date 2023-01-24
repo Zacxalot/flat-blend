@@ -2,12 +2,11 @@ use std::sync::Arc;
 
 use vulkano::{
     device::{
-        physical::PhysicalDeviceType, Device, DeviceCreateInfo, DeviceExtensions, Features, Queue,
-        QueueCreateInfo, QueueFlags,
+        physical::PhysicalDeviceType, Device, DeviceCreateInfo, DeviceExtensions, Queue,
+        QueueCreateInfo,
     },
     instance::Instance,
     swapchain::Surface,
-    Version,
 };
 
 pub fn get_device(
@@ -17,7 +16,7 @@ pub fn get_device(
     Arc<Device>,
     impl ExactSizeIterator + Iterator<Item = Arc<Queue>>,
 ) {
-    let mut device_extensions = DeviceExtensions {
+    let device_extensions = DeviceExtensions {
         khr_swapchain: true,
         ..DeviceExtensions::empty()
     };
@@ -25,9 +24,6 @@ pub fn get_device(
     let (physical_device, queue_family_index) = instance
         .enumerate_physical_devices()
         .unwrap()
-        .filter(|p| {
-            p.api_version() >= Version::V1_3 || p.supported_extensions().khr_dynamic_rendering
-        })
         .filter(|p| p.supported_extensions().contains(&device_extensions))
         .filter_map(|p| {
             p.queue_family_properties()
@@ -48,29 +44,22 @@ pub fn get_device(
         })
         .expect("No suitable physical device found");
 
-    // Some little debug infos.
     println!(
         "Using device: {} (type: {:?})",
         physical_device.properties().device_name,
         physical_device.properties().device_type,
     );
 
-    if physical_device.api_version() < Version::V1_3 {
-        device_extensions.khr_dynamic_rendering = true;
-    }
-
     Device::new(
         physical_device,
         DeviceCreateInfo {
             enabled_extensions: device_extensions,
-            enabled_features: Features {
-                dynamic_rendering: true,
-                ..Features::empty()
-            },
+
             queue_create_infos: vec![QueueCreateInfo {
                 queue_family_index,
                 ..Default::default()
             }],
+
             ..Default::default()
         },
     )

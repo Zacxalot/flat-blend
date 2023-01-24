@@ -19,24 +19,12 @@ use vulkano::{
         allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder, CommandBufferUsage,
         RenderPassBeginInfo, SubpassContents,
     },
-    device::{
-        physical::PhysicalDeviceType, Device, DeviceCreateInfo, DeviceExtensions, QueueCreateInfo,
-    },
-    image::{view::ImageView, ImageAccess, ImageUsage, SwapchainImage},
     impl_vertex,
     instance::{Instance, InstanceCreateInfo},
     memory::allocator::StandardMemoryAllocator,
-    pipeline::{
-        graphics::{
-            input_assembly::InputAssemblyState,
-            vertex_input::BuffersDefinition,
-            viewport::{Viewport, ViewportState},
-        },
-        GraphicsPipeline,
-    },
-    render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass, Subpass},
+    pipeline::graphics::viewport::Viewport,
     swapchain::{
-        acquire_next_image, AcquireError, Swapchain, SwapchainCreateInfo, SwapchainCreationError,
+        acquire_next_image, AcquireError, SwapchainCreateInfo, SwapchainCreationError,
         SwapchainPresentInfo,
     },
     sync::{self, FlushError, GpuFuture},
@@ -50,6 +38,7 @@ use winit::{
 };
 
 use crate::{
+    device::get_device,
     pipeline::create_pipeline,
     shaders::flat,
     swapchain::{create_swapchain, window_size_dependent_setup},
@@ -103,54 +92,7 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
         .build_vk_surface(&event_loop, instance.clone())
         .unwrap();
 
-    let device_extensions = DeviceExtensions {
-        khr_swapchain: true,
-        ..DeviceExtensions::empty()
-    };
-
-    let (physical_device, queue_family_index) = instance
-        .enumerate_physical_devices()
-        .unwrap()
-        .filter(|p| p.supported_extensions().contains(&device_extensions))
-        .filter_map(|p| {
-            p.queue_family_properties()
-                .iter()
-                .enumerate()
-                .position(|(i, q)| {
-                    q.queue_flags.graphics && p.surface_support(i as u32, &surface).unwrap_or(false)
-                })
-                .map(|i| (p, i as u32))
-        })
-        .min_by_key(|(p, _)| match p.properties().device_type {
-            PhysicalDeviceType::DiscreteGpu => 0,
-            PhysicalDeviceType::IntegratedGpu => 1,
-            PhysicalDeviceType::VirtualGpu => 2,
-            PhysicalDeviceType::Cpu => 3,
-            PhysicalDeviceType::Other => 4,
-            _ => 5,
-        })
-        .expect("No suitable physical device found");
-
-    println!(
-        "Using device: {} (type: {:?})",
-        physical_device.properties().device_name,
-        physical_device.properties().device_type,
-    );
-
-    let (device, mut queues) = Device::new(
-        physical_device,
-        DeviceCreateInfo {
-            enabled_extensions: device_extensions,
-
-            queue_create_infos: vec![QueueCreateInfo {
-                queue_family_index,
-                ..Default::default()
-            }],
-
-            ..Default::default()
-        },
-    )
-    .unwrap();
+    let (device, mut queues) = get_device(instance, surface.clone());
 
     let queue = queues.next().unwrap();
 
