@@ -8,7 +8,7 @@ mod view;
 use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
-use cgmath::{Matrix4, Point3, Vector3};
+
 use lyon::{
     geom::point,
     lyon_tessellation::{
