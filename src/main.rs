@@ -3,8 +3,12 @@ mod pipeline;
 mod shaders;
 mod swapchain;
 mod vertex;
+mod view;
+
+use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
+use cgmath::{Matrix4, Point3, Vector3};
 use lyon::{
     geom::point,
     lyon_tessellation::{
@@ -14,15 +18,18 @@ use lyon::{
     path::Path,
 };
 use vulkano::{
-    buffer::{BufferUsage, CpuAccessibleBuffer, TypedBufferAccess},
+    buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool, TypedBufferAccess},
     command_buffer::{
         allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder, CommandBufferUsage,
         RenderPassBeginInfo, SubpassContents,
     },
+    descriptor_set::{
+        allocator::StandardDescriptorSetAllocator, PersistentDescriptorSet, WriteDescriptorSet,
+    },
     impl_vertex,
     instance::{Instance, InstanceCreateInfo},
-    memory::allocator::StandardMemoryAllocator,
-    pipeline::graphics::viewport::Viewport,
+    memory::allocator::{MemoryUsage, StandardMemoryAllocator},
+    pipeline::{graphics::viewport::Viewport, Pipeline, PipelineBindPoint},
     swapchain::{
         acquire_next_image, AcquireError, SwapchainCreateInfo, SwapchainCreationError,
         SwapchainPresentInfo,
@@ -43,6 +50,7 @@ use crate::{
     shaders::flat,
     swapchain::{create_swapchain, window_size_dependent_setup},
     vertex::Vertex,
+    view::get_ortho,
 };
 
 fn build_path() -> Path {
@@ -98,7 +106,7 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
 
     let (mut swapchain, images) = create_swapchain(device.clone(), surface.clone());
 
-    let memory_allocator = StandardMemoryAllocator::new_default(device.clone());
+    let memory_allocator = Arc::new(StandardMemoryAllocator::new_default(device.clone()));
 
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default, Zeroable, Pod)]
@@ -129,6 +137,15 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
     )
     .unwrap();
 
+    let uniform_buffer = CpuBufferPool::<flat::vs::ty::Data>::new(
+        memory_allocator,
+        BufferUsage {
+            uniform_buffer: true,
+            ..BufferUsage::empty()
+        },
+        MemoryUsage::Upload,
+    );
+
     let vs = flat::vs::load(device.clone()).unwrap();
     let fs = flat::fs::load(device.clone()).unwrap();
 
@@ -158,6 +175,8 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
     };
 
     let mut framebuffers = window_size_dependent_setup(&images, render_pass.clone(), &mut viewport);
+
+    let descriptor_set_allocator = StandardDescriptorSetAllocator::new(device.clone());
 
     let command_buffer_allocator =
         StandardCommandBufferAllocator::new(device.clone(), Default::default());
@@ -204,6 +223,22 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
                 recreate_swapchain = false;
             }
 
+            let uniform_buffer_subbuffer = {
+                let uniform_data = flat::vs::ty::Data {
+                    view: get_ortho(swapchain.clone()).into(),
+                };
+
+                uniform_buffer.from_data(uniform_data).unwrap()
+            };
+
+            let layout = pipeline.layout().set_layouts().get(0).unwrap();
+            let set = PersistentDescriptorSet::new(
+                &descriptor_set_allocator,
+                layout.clone(),
+                [WriteDescriptorSet::buffer(0, uniform_buffer_subbuffer)],
+            )
+            .unwrap();
+
             let (image_index, suboptimal, acquire_future) =
                 match acquire_next_image(swapchain.clone(), None) {
                     Ok(r) => r,
@@ -238,6 +273,12 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
                 .unwrap()
                 .set_viewport(0, [viewport.clone()])
                 .bind_pipeline_graphics(pipeline.clone())
+                .bind_descriptor_sets(
+                    PipelineBindPoint::Graphics,
+                    pipeline.layout().clone(),
+                    0,
+                    set,
+                )
                 .bind_vertex_buffers(0, vertex_buffer.clone())
                 .bind_index_buffer(index_buffer.clone())
                 .draw_indexed(index_buffer.len() as u32, 1, 0, 0, 0)

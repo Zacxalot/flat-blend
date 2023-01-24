@@ -52,6 +52,8 @@ pub fn create_swapchain(
     );
     let window = surface.object().unwrap().downcast_ref::<Window>().unwrap();
 
+    window.set_title("Flat Blend");
+
     Swapchain::new(
         device,
         surface.clone(),
