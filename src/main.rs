@@ -1,6 +1,7 @@
 mod device;
 mod pipeline;
 mod shaders;
+mod shapes;
 mod swapchain;
 mod vertex;
 mod view;
@@ -17,6 +18,7 @@ use lyon::{
     math::Point,
     path::Path,
 };
+use shapes::circle::create_circle;
 use vulkano::{
     buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool, TypedBufferAccess},
     command_buffer::{
@@ -318,8 +320,8 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
 }
 
 fn main() {
-    let path = build_path();
-    let buffers = tesselate_path(&path);
+    let buffers = create_circle();
+    // let buffers = tesselate_path(&path);
 
     let vertices = buffers
         .vertices
