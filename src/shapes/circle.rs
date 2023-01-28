@@ -1,7 +1,6 @@
 use lyon::{
     geom::{
         euclid::{Point2D, UnknownUnit},
-        Box2D,
     },
     lyon_tessellation::{
         geometry_builder::simple_builder, FillOptions, FillTessellator, VertexBuffers,

@@ -15,7 +15,7 @@ use vulkano::{
     shader::ShaderModule,
 };
 
-use crate::vertex::Vertex;
+use crate::data::vertex::Vertex;
 
 pub fn create_pipeline(
     render_pass: Arc<RenderPass>,

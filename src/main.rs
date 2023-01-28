@@ -1,10 +1,7 @@
-mod device;
-mod pipeline;
+mod data;
 mod shaders;
 mod shapes;
-mod swapchain;
-mod vertex;
-mod view;
+mod vulkan;
 
 use std::sync::Arc;
 
@@ -47,12 +44,14 @@ use winit::{
 };
 
 use crate::{
-    device::get_device,
-    pipeline::create_pipeline,
+    data::vertex::Vertex,
     shaders::flat,
-    swapchain::{create_swapchain, window_size_dependent_setup},
-    vertex::Vertex,
-    view::get_ortho,
+    vulkan::{
+        device::get_device,
+        pipeline::create_pipeline,
+        swapchain::{create_swapchain, window_size_dependent_setup},
+        view::get_ortho,
+    },
 };
 
 fn build_path() -> Path {
