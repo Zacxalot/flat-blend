@@ -16,3 +16,9 @@ impl From<Point2D<f32, UnknownUnit>> for Vertex {
         }
     }
 }
+
+impl From<(f32, f32)> for Vertex {
+    fn from((x, y): (f32, f32)) -> Self {
+        Vertex { position: [x, y] }
+    }
+}

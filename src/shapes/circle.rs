@@ -1,12 +1,10 @@
 use lyon::{
-    geom::{
-        euclid::{Point2D, UnknownUnit},
-    },
+    geom::euclid::{Point2D, UnknownUnit},
     lyon_tessellation::{
         geometry_builder::simple_builder, FillOptions, FillTessellator, VertexBuffers,
     },
     math::Point,
-    path::Winding,
+    path::{traits::Build, Winding},
 };
 
 pub fn create_circle() -> VertexBuffers<Point2D<f32, UnknownUnit>, u16> {

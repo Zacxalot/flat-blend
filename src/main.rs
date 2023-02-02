@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
 
+use data::edit_mesh::{edges_of_face, gen_square};
 use lyon::{
     geom::point,
     lyon_tessellation::{
@@ -319,16 +320,24 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
 }
 
 fn main() {
-    let buffers = create_circle();
-    // let buffers = tesselate_path(&path);
+    // let buffers = create_circle();
+    // // let buffers = tesselate_path(&path);
 
-    let vertices = buffers
-        .vertices
-        .iter()
-        .map(|vertex| Vertex::from(*vertex))
-        .collect::<Vec<Vertex>>();
+    // let vertices = buffers
+    //     .vertices
+    //     .iter()
+    //     .map(|vertex| Vertex::from(*vertex))
+    //     .collect::<Vec<Vertex>>();
 
-    let indices = buffers.indices.to_vec();
+    // let indices = buffers.indices.to_vec();
 
-    vulkano_init(vertices, indices);
+    // vulkano_init(vertices, indices);
+
+    let EMesh = gen_square();
+
+    let edges = edges_of_face(EMesh, 0);
+
+    for edge in edges {
+        unsafe { println!("{}, {}", (*edge).0, (*edge).1) }
+    }
 }
