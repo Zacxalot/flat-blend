@@ -1,7 +1,13 @@
-// pub struct BMLoop {
-//     pub vertex: Rc<RefCell<BMVert>>,
-//     pub edge: Rc<RefCell<BMEdge>>,
-//     pub face: Rc<RefCell<EFace>>,
-//     pub next: Option<Rc<RefCell<BMLoop>>>,
-//     pub prev: Option<Rc<RefCell<BMLoop>>>,
-// }
+use std::mem::ManuallyDrop;
+
+use super::{bm_edge::BMEdge, bm_face::BMFace, bm_vert::BMVert};
+
+pub struct BMLoop {
+    pub vertex: *mut ManuallyDrop<BMVert>,
+    pub edge: *mut ManuallyDrop<BMEdge>,
+    pub face: *mut ManuallyDrop<BMFace>,
+    pub next: Option<*mut ManuallyDrop<BMLoop>>,
+    pub prev: Option<*mut ManuallyDrop<BMLoop>>,
+    pub radial_next: Option<*mut ManuallyDrop<BMLoop>>,
+    pub radial_prev: Option<*mut ManuallyDrop<BMLoop>>,
+}

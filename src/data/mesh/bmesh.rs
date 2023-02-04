@@ -1,22 +1,26 @@
-use std::{mem::ManuallyDrop};
+use std::mem::ManuallyDrop;
 
 use super::{bm_edge::BMEdge, bm_vert::BMVert};
 
-pub struct EMesh {
+pub struct BMesh {
     pub vertices: Vec<ManuallyDrop<BMVert>>,
     pub edges: Vec<ManuallyDrop<BMEdge>>,
-    // loops: Vec<Rc<RefCell<ELoop>>>,
-    // faces: Vec<Rc<RefCell<EFace>>>,
+    pub loops: Vec<ManuallyDrop<BMEdge>>,
+    pub faces: Vec<ManuallyDrop<BMEdge>>,
 }
 
-pub fn gen_square() -> EMesh {
-    let vertices = vec![];
-    let edges = vec![];
+impl BMesh {
+    pub fn new() -> BMesh {
+        let vertices = vec![];
+        let edges = vec![];
+        let loops = vec![];
+        let faces = vec![];
 
-    EMesh {
-        vertices,
-        edges,
-        // loops,
-        // faces,
+        BMesh {
+            vertices,
+            edges,
+            loops,
+            faces,
+        }
     }
 }

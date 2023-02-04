@@ -4,7 +4,7 @@ use lyon::{
         geometry_builder::simple_builder, FillOptions, FillTessellator, VertexBuffers,
     },
     math::Point,
-    path::{traits::Build, Winding},
+    path::Winding,
 };
 
 pub fn create_circle() -> VertexBuffers<Point2D<f32, UnknownUnit>, u16> {

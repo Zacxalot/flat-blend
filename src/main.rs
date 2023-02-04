@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
 
-use data::mesh::bmesh::gen_square;
+use data::mesh::bmesh::BMesh;
 use lyon::{
     geom::point,
     lyon_tessellation::{
@@ -320,11 +320,7 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
 }
 
 fn main() {
-    let mut e_mesh = gen_square();
-
-    unsafe {
-        std::mem::ManuallyDrop::drop(&mut e_mesh.vertices[0]);
-    }
+    let mut e_mesh = BMesh::new();
 
     println!("{:?}", e_mesh.vertices.len());
 }
