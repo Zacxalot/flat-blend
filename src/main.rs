@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
 
-use data::mesh::bmesh::BMesh;
+use data::mesh::{bm_edge::bm_edge_create, bm_vert::bm_vert_create, bmesh::BMesh};
 use lyon::{
     geom::point,
     lyon_tessellation::{
@@ -320,7 +320,21 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
 }
 
 fn main() {
-    let mut e_mesh = BMesh::new();
+    let mut bmesh = BMesh::new();
 
-    println!("{:?}", e_mesh.vertices.len());
+    let mut v0 = bm_vert_create(&mut bmesh);
+    v0.vertex = Vertex::from((-1.0, 0.0));
+    let mut v1 = bm_vert_create(&mut bmesh);
+    v1.vertex = Vertex::from((1.0, 0.0));
+
+    let e0 = bm_edge_create(&mut bmesh, &mut v0, &mut v1);
+
+    println!("{:?}", (*v0).edge.is_some());
+
+    unsafe {
+        println!("{:?}", (*e0.v0).vertex);
+        println!("{:?}", (*e0.v1).vertex);
+        println!("{:?}", ((*v0).edge.unwrap()));
+        println!("{:?}", ((*v1).edge.unwrap()));
+    }
 }
