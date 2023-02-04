@@ -3,11 +3,11 @@ mod shaders;
 mod shapes;
 mod vulkan;
 
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 
 use bytemuck::{Pod, Zeroable};
 
-use data::edit_mesh::{edges_of_face, gen_square};
+use data::edit_mesh::gen_square;
 use lyon::{
     geom::point,
     lyon_tessellation::{
@@ -333,11 +333,15 @@ fn main() {
 
     // vulkano_init(vertices, indices);
 
-    let EMesh = gen_square();
+    let mut EMesh = gen_square();
 
-    let edges = edges_of_face(EMesh, 0);
+    EMesh.vertices.clear();
+    EMesh.edges.clear();
+    println!("{:?}", Rc::strong_count(&(*EMesh.edges[0]).borrow().v0));
 
-    for edge in edges {
-        unsafe { println!("{}, {}", (*edge).0, (*edge).1) }
-    }
+    // let edges = edges_of_face(EMesh, 0);
+
+    // for edge in edges {
+    //     unsafe { println!("{}, {}", (*edge).0, (*edge).1) }
+    // }
 }

@@ -1,109 +1,87 @@
-use super::vertex::Vertex;
+use std::{cell::RefCell, rc::Rc};
 
-pub struct EEdge(pub usize, pub usize);
+use crate::data::{e_edge::EEdge, e_vert::EVert};
+
+use super::{e_edge::EEdgeRc, e_vert::EVertRc};
 
 pub struct ELoop {
-    pub vertex: usize,
-    pub edge: *const EEdge,
-    pub face: *const EFace,
-    pub next: Option<*mut ELoop>,
-    pub prev: Option<*mut ELoop>,
+    pub vertex: Rc<RefCell<EVert>>,
+    pub edge: Rc<RefCell<EEdge>>,
+    pub face: Rc<RefCell<EFace>>,
+    pub next: Option<Rc<RefCell<ELoop>>>,
+    pub prev: Option<Rc<RefCell<ELoop>>>,
 }
 
 pub struct EFace {
-    loop_start: *const ELoop,
+    loop_start: Rc<RefCell<ELoop>>,
     loop_len: usize,
 }
 
 pub struct EMesh {
-    vertices: Vec<Vertex>,
-    edges: Vec<EEdge>,
-    loops: Vec<ELoop>,
-    faces: Vec<EFace>,
+    pub vertices: Vec<EVertRc>,
+    pub edges: Vec<EEdgeRc>,
+    // loops: Vec<Rc<RefCell<ELoop>>>,
+    // faces: Vec<Rc<RefCell<EFace>>>,
 }
 
 pub fn gen_square() -> EMesh {
     let vertices = vec![
-        Vertex::from((-1.0, -1.0)),
-        Vertex::from((1.0, -1.0)),
-        Vertex::from((1.0, 1.0)),
-        Vertex::from((-1.0, 1.0)),
+        Rc::from(RefCell::from(EVert::from((-1.0, -1.0)))),
+        Rc::from(RefCell::from(EVert::from((-1.0, 1.0)))),
+        Rc::from(RefCell::from(EVert::from((1.0, 1.0)))),
+        Rc::from(RefCell::from(EVert::from((1.0, -1.0)))),
     ];
 
-    let edges = vec![EEdge(0, 1), EEdge(1, 2), EEdge(2, 3), EEdge(3, 0)];
+    let edges = vec![
+        Rc::from(RefCell::from(EEdge {
+            v0: vertices[0].clone(),
+            v1: vertices[1].clone(),
+        })),
+        Rc::from(RefCell::from(EEdge {
+            v0: vertices[1].clone(),
+            v1: vertices[2].clone(),
+        })),
+        Rc::from(RefCell::from(EEdge {
+            v0: vertices[2].clone(),
+            v1: vertices[3].clone(),
+        })),
+        Rc::from(RefCell::from(EEdge {
+            v0: vertices[3].clone(),
+            v1: vertices[0].clone(),
+        })),
+    ];
 
-    let mut face = EFace {
-        loop_start: std::ptr::null(),
-        loop_len: 4,
-    };
+    (*vertices[0].clone()).borrow_mut().edge = Some(edges[0].clone());
+    (*vertices[1].clone()).borrow_mut().edge = Some(edges[1].clone());
+    (*vertices[2].clone()).borrow_mut().edge = Some(edges[2].clone());
+    (*vertices[3].clone()).borrow_mut().edge = Some(edges[3].clone());
 
-    let mut faces = vec![face];
+    // println!("{:?}", (*a).borrow().vertex);
 
-    let mut loop_1 = ELoop {
-        vertex: 0,
-        edge: &edges[0],
-        face: &faces[0],
-        next: None,
-        prev: None,
-    };
+    // a.borrow_mut().vertex.position[0] = 5.0;
 
-    let mut loop_2 = ELoop {
-        vertex: 1,
-        edge: &edges[1],
-        face: &faces[0],
-        next: None,
-        prev: None,
-    };
-
-    let mut loop_3 = ELoop {
-        vertex: 2,
-        edge: &edges[2],
-        face: &faces[0],
-        next: None,
-        prev: None,
-    };
-
-    let mut loop_4 = ELoop {
-        vertex: 3,
-        edge: &edges[3],
-        face: &faces[0],
-        next: None,
-        prev: None,
-    };
-
-    let mut loops = vec![loop_1, loop_2, loop_3, loop_4];
-
-    loops[0].prev = Some(core::ptr::addr_of_mut!(loops[3]));
-    loops[0].next = Some(core::ptr::addr_of_mut!(loops[1]));
-    loops[1].prev = Some(core::ptr::addr_of_mut!(loops[0]));
-    loops[1].next = Some(core::ptr::addr_of_mut!(loops[2]));
-    loops[2].prev = Some(core::ptr::addr_of_mut!(loops[1]));
-    loops[2].next = Some(core::ptr::addr_of_mut!(loops[3]));
-    loops[3].prev = Some(core::ptr::addr_of_mut!(loops[2]));
-    loops[3].next = Some(core::ptr::addr_of_mut!(loops[0]));
-
-    faces[0].loop_start = &loops[0];
+    println!("{:?}", (vertices[0].as_ref().borrow()).vertex);
 
     EMesh {
         vertices,
         edges,
-        loops,
-        faces,
+        // loops,
+        // faces,
     }
 }
 
-pub fn edges_of_face(emesh: EMesh, face_pos: usize) -> Vec<*const EEdge> {
-    let face = &emesh.faces[0];
-    let mut edges: Vec<*const EEdge> = vec![];
+// pub fn edges_of_face(emesh: EMesh, face_pos: usize) -> Vec<*const EEdge> {
+//     let face = &emesh.faces[0];
+//     let mut edges: Vec<*const EEdge> = vec![];
 
-    let mut to_get = face.loop_start;
+//     let mut to_get = face.loop_start;
 
-    for i in 0..face.loop_len {
-        unsafe {
-            edges.push((*to_get).edge);
-            to_get = (*to_get).next.unwrap();
-        }
-    }
+//     for i in 0..face.loop_len {
+//         unsafe {
+//             edges.push((*to_get).edge);
+//             to_get = (*to_get).next.unwrap();
+//         }
+//     }
 
-    edges
-}
+//     edges
+// }
