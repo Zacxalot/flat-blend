@@ -3,11 +3,13 @@ mod shaders;
 mod shapes;
 mod vulkan;
 
-use std::{rc::Rc, sync::Arc};
+use std::{
+    sync::Arc,
+};
 
 use bytemuck::{Pod, Zeroable};
 
-use data::edit_mesh::gen_square;
+use data::bm_mesh::gen_square;
 use lyon::{
     geom::point,
     lyon_tessellation::{
@@ -16,7 +18,7 @@ use lyon::{
     math::Point,
     path::Path,
 };
-use shapes::circle::create_circle;
+
 use vulkano::{
     buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool, TypedBufferAccess},
     command_buffer::{
@@ -45,7 +47,7 @@ use winit::{
 };
 
 use crate::{
-    data::vertex::Vertex,
+    data::{vertex::Vertex},
     shaders::flat,
     vulkan::{
         device::get_device,
@@ -320,28 +322,11 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
 }
 
 fn main() {
-    // let buffers = create_circle();
-    // // let buffers = tesselate_path(&path);
+    let mut e_mesh = gen_square();
 
-    // let vertices = buffers
-    //     .vertices
-    //     .iter()
-    //     .map(|vertex| Vertex::from(*vertex))
-    //     .collect::<Vec<Vertex>>();
+    unsafe {
+        std::mem::ManuallyDrop::drop(&mut e_mesh.vertices[0]);
+    }
 
-    // let indices = buffers.indices.to_vec();
-
-    // vulkano_init(vertices, indices);
-
-    let mut EMesh = gen_square();
-
-    EMesh.vertices.clear();
-    EMesh.edges.clear();
-    println!("{:?}", Rc::strong_count(&(*EMesh.edges[0]).borrow().v0));
-
-    // let edges = edges_of_face(EMesh, 0);
-
-    // for edge in edges {
-    //     unsafe { println!("{}, {}", (*edge).0, (*edge).1) }
-    // }
+    println!("{:?}", e_mesh.vertices.len());
 }

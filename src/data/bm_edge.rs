@@ -1,13 +1,11 @@
-use std::{cell::RefCell, rc::Rc};
+use std::mem::ManuallyDrop;
 
-use super::e_vert::{EVert, EVertRc};
-
-pub type EEdgeRc = Rc<RefCell<EEdge>>;
+use super::bm_vert::BMVert;
 
 #[derive(Debug)]
-pub struct EEdge {
-    pub v0: EVertRc,
-    pub v1: EVertRc,
+pub struct BMEdge {
+    pub v0: *mut ManuallyDrop<BMVert>,
+    pub v1: *mut ManuallyDrop<BMVert>,
 }
 
 // impl EEdge {
