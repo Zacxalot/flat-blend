@@ -1,6 +1,6 @@
-use std::{cell::RefCell, mem::ManuallyDrop, rc::Rc};
+use std::{mem::ManuallyDrop};
 
-use crate::data::{bm_edge::BMEdge, bm_vert::BMVert};
+use super::{bm_edge::BMEdge, bm_vert::BMVert};
 
 pub struct EMesh {
     pub vertices: Vec<ManuallyDrop<BMVert>>,
@@ -10,8 +10,8 @@ pub struct EMesh {
 }
 
 pub fn gen_square() -> EMesh {
-    let mut vertices = vec![];
-    let mut edges = vec![];
+    let vertices = vec![];
+    let edges = vec![];
 
     EMesh {
         vertices,

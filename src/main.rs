@@ -3,13 +3,11 @@ mod shaders;
 mod shapes;
 mod vulkan;
 
-use std::{
-    sync::Arc,
-};
+use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
 
-use data::bm_mesh::gen_square;
+use data::mesh::bmesh::gen_square;
 use lyon::{
     geom::point,
     lyon_tessellation::{
@@ -47,7 +45,7 @@ use winit::{
 };
 
 use crate::{
-    data::{vertex::Vertex},
+    data::vertex::Vertex,
     shaders::flat,
     vulkan::{
         device::get_device,
