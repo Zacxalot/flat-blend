@@ -1,9 +1,9 @@
 use std::mem::ManuallyDrop;
 
 use super::{
-    bm_edge::{BMEdge, PBMEdge},
+    bm_edge::{PBMEdge},
     bm_face::BMFace,
-    bm_vert::{BMVert, PBMVert},
+    bm_vert::{PBMVert},
 };
 
 pub type PBMLoop = *mut ManuallyDrop<BMLoop>;

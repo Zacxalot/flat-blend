@@ -329,12 +329,12 @@ fn main() {
 
     let e0 = bm_edge_create(&mut bmesh, &mut v0, &mut v1);
 
-    println!("{:?}", (*v0).edge.is_some());
+    println!("{:?}", v0.edge.is_some());
 
     unsafe {
         println!("{:?}", (*e0.v0).vertex);
         println!("{:?}", (*e0.v1).vertex);
-        println!("{:?}", ((*v0).edge.unwrap()));
-        println!("{:?}", ((*v1).edge.unwrap()));
+        println!("{:?}", (v0.edge.unwrap()));
+        println!("{:?}", (v1.edge.unwrap()));
     }
 }

@@ -3,7 +3,7 @@ use std::mem::ManuallyDrop;
 use crate::data::vertex::Vertex;
 
 use super::{
-    bm_edge::{BMEdge, PBMEdge},
+    bm_edge::{PBMEdge},
     bmesh::BMesh,
 };
 
