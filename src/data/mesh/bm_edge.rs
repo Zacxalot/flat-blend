@@ -1,4 +1,4 @@
-use std::{mem::ManuallyDrop, ptr::null_mut};
+use std::{ptr::null_mut};
 
 use super::{
     bm_disk_link::{bmesh_disk_edge_append, BMDiskLink},

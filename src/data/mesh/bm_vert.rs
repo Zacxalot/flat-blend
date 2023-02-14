@@ -1,10 +1,8 @@
-use std::mem::ManuallyDrop;
+
 
 use crate::data::vertex::Vertex;
 
 use super::{bm_edge::BMEdge, bmesh::BMesh};
-
-pub type PBMVert = *mut ManuallyDrop<BMVert>;
 
 #[derive(Debug)]
 pub struct BMVert {
