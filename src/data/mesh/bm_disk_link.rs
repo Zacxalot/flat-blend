@@ -1,10 +1,10 @@
 use std::ptr::null_mut;
 
-use super::{bm_edge::PBMEdge, bm_vert::PBMVert};
+use super::{bm_edge::BMEdge, bm_vert::BMVert};
 
 pub struct BMDiskLink {
-    next: PBMEdge,
-    prev: PBMEdge,
+    next: *mut BMEdge,
+    prev: *mut BMEdge,
 }
 
 impl BMDiskLink {
@@ -16,7 +16,7 @@ impl BMDiskLink {
     }
 }
 
-pub fn bmesh_disk_edge_append(e: PBMEdge, v: PBMVert) {
+pub fn bmesh_disk_edge_append(e: &mut BMEdge, v: *mut BMVert) {
     unsafe {
         if (*v).edge.is_none() {
             let dl1 = bmesh_disk_edge_link_from_vert(e, v);
@@ -28,7 +28,7 @@ pub fn bmesh_disk_edge_append(e: PBMEdge, v: PBMVert) {
     }
 }
 
-pub fn bmesh_disk_edge_link_from_vert(e: PBMEdge, v: PBMVert) -> *mut BMDiskLink {
+pub fn bmesh_disk_edge_link_from_vert(e: *mut BMEdge, v: *mut BMVert) -> *mut BMDiskLink {
     unsafe {
         if (*e).v0 == v {
             (*e).v0_disk_link = BMDiskLink::new();

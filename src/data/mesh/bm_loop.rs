@@ -1,19 +1,15 @@
 use std::mem::ManuallyDrop;
 
-use super::{
-    bm_edge::{PBMEdge},
-    bm_face::BMFace,
-    bm_vert::{PBMVert},
-};
+use super::{bm_edge::BMEdge, bm_face::BMFace, bm_vert::BMVert};
 
 pub type PBMLoop = *mut ManuallyDrop<BMLoop>;
 
 pub struct BMLoop {
-    pub vertex: PBMVert,
-    pub edge: PBMEdge,
-    pub face: *mut ManuallyDrop<BMFace>,
-    pub next: Option<PBMLoop>,
-    pub prev: Option<PBMLoop>,
-    pub radial_next: Option<PBMLoop>,
-    pub radial_prev: Option<PBMLoop>,
+    pub vertex: *mut BMVert,
+    pub edge: *mut BMEdge,
+    pub face: *mut BMFace,
+    pub next: Option<*mut BMLoop>,
+    pub prev: Option<*mut BMLoop>,
+    pub radial_next: Option<*mut BMLoop>,
+    pub radial_prev: Option<*mut BMLoop>,
 }

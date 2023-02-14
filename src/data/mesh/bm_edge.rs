@@ -2,23 +2,21 @@ use std::{mem::ManuallyDrop, ptr::null_mut};
 
 use super::{
     bm_disk_link::{bmesh_disk_edge_append, BMDiskLink},
-    bm_loop::PBMLoop,
-    bm_vert::PBMVert,
+    bm_loop::BMLoop,
+    bm_vert::BMVert,
     bmesh::BMesh,
 };
 
-pub type PBMEdge = *mut ManuallyDrop<BMEdge>;
-
 pub struct BMEdge {
-    pub v0: PBMVert,
-    pub v1: PBMVert,
-    pub r#loop: PBMLoop,
+    pub v0: *mut BMVert,
+    pub v1: *mut BMVert,
+    pub r#loop: *mut BMLoop,
     pub v0_disk_link: BMDiskLink,
     pub v1_disk_link: BMDiskLink,
 }
 
-pub fn bm_edge_create(_bmesh: &mut BMesh, v0: PBMVert, v1: PBMVert) -> ManuallyDrop<BMEdge> {
-    let mut e = ManuallyDrop::new(BMEdge {
+pub fn bm_edge_create(bmesh: &mut BMesh, v0: *mut BMVert, v1: *mut BMVert) -> *mut BMEdge {
+    let mut e = bmesh.edges.alloc(BMEdge {
         v0,
         v1,
         r#loop: null_mut(),
