@@ -1,7 +1,7 @@
 use std::ptr::null_mut;
 
 use super::{
-    bm_disk_link::{bmesh_disk_edge_append, BMDiskLink},
+    bm_disk_link::{bmesh_disk_edge_append, bmesh_disk_edge_remove, BMDiskLink},
     bm_face::bm_face_kill,
     bm_loop::BMLoop,
     bm_vert::BMVert,
@@ -37,7 +37,8 @@ pub fn bm_edge_kill(bmesh: &mut BMesh, edge: *mut BMEdge) {
             bm_face_kill(bmesh, (*r#loop).face);
         }
 
-        bmesh_disk_edge_remove()
+        bmesh_disk_edge_remove(edge, (*edge).v0);
+        bmesh_disk_edge_remove(edge, (*edge).v1);
     }
 }
 

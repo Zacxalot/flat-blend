@@ -7,4 +7,6 @@ pub struct BMFace {
     loop_len: usize,
 }
 
-pub fn bm_face_kill(bmesh: &mut BMesh, face: *mut BMFace) {}
+pub fn bm_face_kill(bmesh: &mut BMesh, face: *mut BMFace) {
+    todo!("Implement")
+}

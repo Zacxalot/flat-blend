@@ -40,7 +40,33 @@ pub fn bmesh_disk_edge_append(e: &mut BMEdge, v: *mut BMVert) {
     }
 }
 
-pub fn bmesh_disk_edge_remove(e: &mut BMEdge, v: *mut BMVert) {}
+pub fn bmesh_disk_edge_remove(e: *mut BMEdge, v: *mut BMVert) {
+    unsafe {
+        let dl1 = bmesh_disk_edge_link_from_vert(e, v);
+        if let Some(dl1_prev) = (*dl1).prev {
+            let dl2 = bmesh_disk_edge_link_from_vert(dl1_prev, v);
+            (*dl2).next = (*dl1).next;
+        }
+
+        if let Some(dl1_next) = (*dl1).prev {
+            let dl2 = bmesh_disk_edge_link_from_vert(dl1_next, v);
+            (*dl2).prev = (*dl1).prev;
+        }
+
+        if let Some(v_edge) = (*v).edge {
+            if v_edge == e {
+                if (*dl1).next != Some(e) {
+                    (*v).edge = (*dl1).next;
+                } else {
+                    (*v).edge = None
+                }
+            }
+        }
+
+        (*dl1).next = None;
+        (*dl1).prev = None;
+    }
+}
 
 pub fn bmesh_disk_edge_link_from_vert(e: *mut BMEdge, v: *mut BMVert) -> *mut BMDiskLink {
     unsafe {
