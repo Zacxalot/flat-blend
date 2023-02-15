@@ -1,8 +1,9 @@
-
-
 use crate::data::vertex::Vertex;
 
-use super::{bm_edge::BMEdge, bmesh::BMesh};
+use super::{
+    bm_edge::{bm_edge_kill, BMEdge},
+    bmesh::BMesh,
+};
 
 #[derive(Debug)]
 pub struct BMVert {
@@ -22,3 +23,15 @@ impl From<(f32, f32)> for BMVert {
 pub fn bm_vert_create(bmesh: &mut BMesh) -> *mut BMVert {
     bmesh.vertices.alloc(BMVert::from((0.0, 0.0)))
 }
+
+pub fn bm_vert_kill(bmesh: &mut BMesh, vert: *mut BMVert) {
+    unsafe {
+        while let Some(edge) = (*vert).edge {
+            bm_edge_kill(bmesh, edge);
+        }
+
+        bm_kill_only_vert(bmesh, vert);
+    }
+}
+
+pub fn bm_kill_only_vert(bmesh: &mut BMesh, vert: *mut BMVert) {}
