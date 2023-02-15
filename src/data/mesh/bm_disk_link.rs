@@ -2,6 +2,7 @@ use std::ptr::null_mut;
 
 use super::{bm_edge::BMEdge, bm_vert::BMVert};
 
+#[derive(Debug)]
 pub struct BMDiskLink {
     next: Option<*mut BMEdge>,
     prev: Option<*mut BMEdge>,
@@ -25,12 +26,12 @@ pub fn bmesh_disk_edge_append(e: &mut BMEdge, v: *mut BMVert) {
             (*dl1).next = Some(v_edge);
             (*dl1).prev = (*dl2).prev;
 
-            (*dl2).prev = Some(e);
-
             if let Some(dl2_prev_edge) = (*dl2).prev {
                 let dl3 = bmesh_disk_edge_link_from_vert(dl2_prev_edge, v);
                 (*dl3).next = Some(e);
             }
+
+            (*dl2).prev = Some(e);
         } else {
             let dl1 = bmesh_disk_edge_link_from_vert(e, v);
             (*v).edge = Some(e);
@@ -48,7 +49,7 @@ pub fn bmesh_disk_edge_remove(e: *mut BMEdge, v: *mut BMVert) {
             (*dl2).next = (*dl1).next;
         }
 
-        if let Some(dl1_next) = (*dl1).prev {
+        if let Some(dl1_next) = (*dl1).next {
             let dl2 = bmesh_disk_edge_link_from_vert(dl1_next, v);
             (*dl2).prev = (*dl1).prev;
         }
@@ -71,11 +72,9 @@ pub fn bmesh_disk_edge_remove(e: *mut BMEdge, v: *mut BMVert) {
 pub fn bmesh_disk_edge_link_from_vert(e: *mut BMEdge, v: *mut BMVert) -> *mut BMDiskLink {
     unsafe {
         if (*e).v0 == v {
-            (*e).v0_disk_link = BMDiskLink::new();
-            &mut ((*e).v0_disk_link)
+            &mut (*e).v0_disk_link
         } else {
-            (*e).v1_disk_link = BMDiskLink::new();
-            &mut ((*e).v1_disk_link)
+            &mut (*e).v1_disk_link
         }
     }
 }

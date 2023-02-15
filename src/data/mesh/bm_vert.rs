@@ -1,6 +1,6 @@
 use std::borrow::BorrowMut;
 
-use crate::data::vertex::Vertex;
+use crate::data::{mesh::bm_disk_link::bmesh_disk_edge_link_from_vert, vertex::Vertex};
 
 use super::{
     bm_edge::{bm_edge_kill, BMEdge},
