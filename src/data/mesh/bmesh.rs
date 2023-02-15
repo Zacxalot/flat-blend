@@ -7,6 +7,7 @@ pub struct BMesh {
     pub edges: Arena<BMEdge>,
     pub loops: Arena<BMLoop>,
     pub faces: Arena<BMFace>,
+    pub edge_total: u64,
 }
 
 impl BMesh {
@@ -21,6 +22,7 @@ impl BMesh {
             edges,
             loops,
             faces,
+            edge_total: 0,
         }
     }
 }

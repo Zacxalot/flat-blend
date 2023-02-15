@@ -28,6 +28,8 @@ pub fn bm_edge_create(bmesh: &mut BMesh, v0: *mut BMVert, v1: *mut BMVert) -> *m
     bmesh_disk_edge_append(e, v0);
     bmesh_disk_edge_append(e, v1);
 
+    (*bmesh).edge_total += 1;
+
     e
 }
 
@@ -42,4 +44,6 @@ pub fn bm_edge_kill(bmesh: &mut BMesh, edge: *mut BMEdge) {
     }
 }
 
-pub fn bm_kill_only_edge(bmesh: &mut BMesh, edge: *mut BMEdge) {}
+pub fn bm_kill_only_edge(bmesh: &mut BMesh, edge: *mut BMEdge) {
+    (*bmesh).edge_total -= 1;
+}
