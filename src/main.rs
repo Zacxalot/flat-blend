@@ -45,7 +45,7 @@ use winit::{
 };
 
 use crate::{
-    data::vertex::Vertex,
+    data::{mesh::bm_vert::bm_vert_kill, vertex::Vertex},
     shaders::flat,
     vulkan::{
         device::get_device,
@@ -319,22 +319,4 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
     });
 }
 
-fn main() {
-    let mut bmesh = BMesh::new();
-
-    unsafe {
-        let mut v0 = bm_vert_create(&mut bmesh);
-        (*v0).vertex = Vertex::from((-1.0, 0.0));
-        let mut v1 = bm_vert_create(&mut bmesh);
-        (*v1).vertex = Vertex::from((1.0, 0.0));
-
-        let e0 = bm_edge_create(&mut bmesh, v0, v1);
-
-        println!("{:?}", (*v0).edge.is_some());
-
-        println!("{:?}", (*(*e0).v0).vertex);
-        println!("{:?}", (*(*e0).v1).vertex);
-        println!("{:?}", ((*v0).edge.unwrap()));
-        println!("{:?}", ((*v1).edge.unwrap()));
-    }
-}
+fn main() {}

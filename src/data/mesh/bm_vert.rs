@@ -1,3 +1,5 @@
+use std::borrow::BorrowMut;
+
 use crate::data::vertex::Vertex;
 
 use super::{
@@ -7,6 +9,7 @@ use super::{
 
 #[derive(Debug)]
 pub struct BMVert {
+    slab_index: usize,
     pub edge: Option<*mut BMEdge>,
     pub vertex: Vertex,
 }
@@ -14,6 +17,7 @@ pub struct BMVert {
 impl From<(f32, f32)> for BMVert {
     fn from(input: (f32, f32)) -> Self {
         BMVert {
+            slab_index: 0,
             edge: None,
             vertex: Vertex::from(input),
         }
@@ -21,7 +25,11 @@ impl From<(f32, f32)> for BMVert {
 }
 
 pub fn bm_vert_create(bmesh: &mut BMesh) -> *mut BMVert {
-    bmesh.vertices.alloc(BMVert::from((0.0, 0.0)))
+    let v_index = bmesh.vertices.insert(BMVert::from((0.0, 0.0)));
+    let v = bmesh.vertices.get_mut(v_index).unwrap();
+    v.slab_index = v_index;
+
+    v
 }
 
 pub fn bm_vert_kill(bmesh: &mut BMesh, vert: *mut BMVert) {
@@ -34,4 +42,8 @@ pub fn bm_vert_kill(bmesh: &mut BMesh, vert: *mut BMVert) {
     }
 }
 
-pub fn bm_kill_only_vert(bmesh: &mut BMesh, vert: *mut BMVert) {}
+pub fn bm_kill_only_vert(bmesh: &mut BMesh, vert: *mut BMVert) {
+    unsafe {
+        bmesh.vertices.remove((*vert).slab_index);
+    }
+}
