@@ -1,5 +1,3 @@
-use std::ptr::null_mut;
-
 use super::{bm_edge::BMEdge, bm_vert::BMVert};
 
 #[derive(Debug)]

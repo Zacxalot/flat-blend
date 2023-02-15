@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
 
-use data::mesh::{bm_edge::bm_edge_create, bm_vert::bm_vert_create, bmesh::BMesh};
 use lyon::{
     geom::point,
     lyon_tessellation::{
@@ -45,7 +44,7 @@ use winit::{
 };
 
 use crate::{
-    data::{mesh::bm_vert::bm_vert_kill, vertex::Vertex},
+    data::vertex::Vertex,
     shaders::flat,
     vulkan::{
         device::get_device,
