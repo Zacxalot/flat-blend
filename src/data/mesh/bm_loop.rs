@@ -1,9 +1,11 @@
+use std::ptr::null_mut;
+
 use super::{bm_edge::BMEdge, bm_face::BMFace, bm_vert::BMVert, bmesh::BMesh};
 
 pub struct BMLoop {
     pub slab_index: usize,
     pub vertex: *mut BMVert,
-    pub edge: *mut BMEdge,
+    pub edge: Option<*mut BMEdge>,
     pub face: *mut BMFace,
     pub next: Option<*mut BMLoop>,
     pub prev: Option<*mut BMLoop>,
@@ -20,7 +22,7 @@ pub fn bm_loop_create(
     let l_index = bmesh.loops.insert(BMLoop {
         slab_index: 0,
         vertex: v,
-        edge: e,
+        edge: Some(e),
         face: f,
         next: None,
         prev: None,
@@ -49,6 +51,29 @@ pub fn bmesh_radial_loop_append(e: *mut BMEdge, l: *mut BMLoop) {
             (*l).radial_prev = Some(l);
         }
 
-        (*l).edge = e;
+        (*l).edge = Some(e);
     }
+}
+
+pub fn bmesh_radial_loop_remove(e: *mut BMEdge, l: *mut BMLoop) {
+    unsafe {
+        if (*l).radial_next != Some(l) {
+            if (*e).r#loop == Some(l) {
+                (*e).r#loop = (*l).radial_next;
+            }
+
+            (*(*l).radial_next.unwrap()).radial_prev = (*l).radial_prev;
+            (*(*l).radial_prev.unwrap()).radial_prev = (*l).radial_next;
+        } else if (*e).r#loop == Some(l) {
+            (*e).r#loop = None
+        }
+
+        (*l).radial_next = None;
+        (*l).radial_prev = None;
+        (*l).edge = None;
+    }
+}
+
+pub unsafe fn bm_kill_only_loop(bmesh: &mut BMesh, l: *mut BMLoop) {
+    bmesh.loops.remove((*l).slab_index);
 }
