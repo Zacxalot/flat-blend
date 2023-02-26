@@ -166,8 +166,6 @@ fn vulkano_init() {
 
     let mut previous_frame_end = Some(sync::now(device.clone()).boxed());
 
-    let mut mouse_position: PhysicalPosition<f64> = PhysicalPosition { x: 0.0, y: 0.0 };
-
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
             event: WindowEvent::CloseRequested,
@@ -197,15 +195,12 @@ fn vulkano_init() {
             event: WindowEvent::CursorMoved { position, .. },
             ..
         } => {
-            mouse_position = position;
-
             let window = surface.object().unwrap().downcast_ref::<Window>().unwrap();
             let width = window.inner_size().width as f64;
             let height = window.inner_size().height as f64;
 
-            let rel_x = 6.0 * ((mouse_position.x / width) * 2.0 - 1.0);
-            let rel_y = 6.0 * (1.0 - (mouse_position.y / height) * 2.0);
-            // println!("{} {} ({},{})", width, height, rel_x, rel_y);
+            let rel_x = 6.0 * ((position.x / width) * 2.0 - 1.0);
+            let rel_y = 6.0 * (1.0 - (position.y / height) * 2.0);
 
             square_mesh
                 .vertices
