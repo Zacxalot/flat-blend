@@ -298,29 +298,6 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u32>) {
 fn main() {
     let square_mesh = create_square();
 
-    // let face = square_mesh.faces.get_mut(0).unwrap();
-
-    // let iter = BMLoopIterator::new(face.loop_start.unwrap());
-
-    // bm_triangulate(square_mesh);
-
-    // for val in iter {
-    //     unsafe {
-    //         println!("{:?}", (*(*val).vertex));
-    //     }
-    // }
-
-    // let mut values = HashSet::new();
-
-    // values.insert(3);
-    // values.insert(4);
-    // values.insert(1);
-    // values.insert(2);
-
-    // println!("{:?}", values.into_iter().collect::<Vec<usize>>());
-
-    // let mut iter = BMLoopIterator::new((*square_mesh.faces.get(0).unwrap()).l);
-
     let (vertices, indices) = bm_triangulate(square_mesh);
 
     vulkano_init(vertices, indices);

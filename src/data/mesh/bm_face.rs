@@ -3,7 +3,7 @@ use std::iter::zip;
 use super::{
     bm_edge::BMEdge,
     bm_loop::{
-        self, bm_kill_only_loop, bm_loop_create, bmesh_radial_loop_append,
+        bm_kill_only_loop, bm_loop_create, bmesh_radial_loop_append,
         bmesh_radial_loop_remove, BMLoop,
     },
     bm_vert::BMVert,
