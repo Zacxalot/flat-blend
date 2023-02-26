@@ -11,9 +11,9 @@ use super::{
 };
 
 pub struct BMFace {
-    loop_start: Option<*mut BMLoop>,
-    loop_len: usize,
-    slab_index: usize,
+    pub loop_start: Option<*mut BMLoop>,
+    pub loop_len: usize,
+    pub slab_index: usize,
 }
 
 pub fn bm_face_create(
@@ -21,7 +21,7 @@ pub fn bm_face_create(
     verts: &[*mut BMVert],
     edges: &[*mut BMEdge],
 ) -> *mut BMFace {
-    let f = bm_face_create__internal(bmesh);
+    let f = bm_face_create_internal(bmesh);
 
     unsafe {
         (*f).loop_len = verts.len();
@@ -50,7 +50,7 @@ pub fn bm_face_create(
     f
 }
 
-pub fn bm_face_create__internal(bmesh: &mut BMesh) -> *mut BMFace {
+pub fn bm_face_create_internal(bmesh: &mut BMesh) -> *mut BMFace {
     let f_index = bmesh.faces.insert(BMFace {
         loop_len: 0,
         loop_start: None,

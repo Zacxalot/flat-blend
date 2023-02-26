@@ -7,15 +7,10 @@ use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
 
-use lyon::{
-    geom::point,
-    lyon_tessellation::{
-        geometry_builder::simple_builder, FillOptions, FillTessellator, VertexBuffers,
-    },
-    math::Point,
-    path::Path,
-};
+use data::mesh::bmesh::bm_triangulate;
+use lyon::{geom::point, path::Path};
 
+use shapes::square::create_square;
 use vulkano::{
     buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool, TypedBufferAccess},
     command_buffer::{
@@ -64,25 +59,7 @@ fn build_path() -> Path {
     path_builder.build()
 }
 
-fn tesselate_path(path: &Path) -> VertexBuffers<Point, u16> {
-    let mut buffers: VertexBuffers<Point, u16> = VertexBuffers::new();
-
-    {
-        let mut vertex_builder = simple_builder(&mut buffers);
-
-        // Create the tessellator.
-        let mut tessellator = FillTessellator::new();
-
-        // Compute the tessellation.
-        tessellator
-            .tessellate_path(path, &FillOptions::default(), &mut vertex_builder)
-            .unwrap();
-    }
-
-    buffers
-}
-
-fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
+fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u32>) {
     let library = VulkanLibrary::new().unwrap();
     let required_extensions = vulkano_win::required_extensions(&library);
 
@@ -318,4 +295,33 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u16>) {
     });
 }
 
-fn main() {}
+fn main() {
+    let square_mesh = create_square();
+
+    // let face = square_mesh.faces.get_mut(0).unwrap();
+
+    // let iter = BMLoopIterator::new(face.loop_start.unwrap());
+
+    // bm_triangulate(square_mesh);
+
+    // for val in iter {
+    //     unsafe {
+    //         println!("{:?}", (*(*val).vertex));
+    //     }
+    // }
+
+    // let mut values = HashSet::new();
+
+    // values.insert(3);
+    // values.insert(4);
+    // values.insert(1);
+    // values.insert(2);
+
+    // println!("{:?}", values.into_iter().collect::<Vec<usize>>());
+
+    // let mut iter = BMLoopIterator::new((*square_mesh.faces.get(0).unwrap()).l);
+
+    let (vertices, indices) = bm_triangulate(square_mesh);
+
+    vulkano_init(vertices, indices);
+}

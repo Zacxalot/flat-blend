@@ -1,6 +1,13 @@
 use slab::Slab;
 
-use super::{bm_edge::BMEdge, bm_face::BMFace, bm_loop::BMLoop, bm_vert::BMVert};
+use crate::data::vertex::Vertex;
+
+use super::{
+    bm_edge::BMEdge,
+    bm_face::BMFace,
+    bm_loop::{BMLoop, BMLoopIterator},
+    bm_vert::BMVert,
+};
 
 pub struct BMesh {
     pub vertices: Slab<BMVert>,
@@ -22,6 +29,46 @@ impl BMesh {
             loops,
             faces,
         }
+    }
+}
+
+pub fn bm_triangulate(bmesh: BMesh) -> (Vec<Vertex>, Vec<u32>) {
+    let mut all_bm_vertices: Vec<*mut BMVert> = vec![];
+    let mut all_indices: Vec<u32> = vec![];
+
+    for (_, face) in bmesh.faces {
+        unsafe {
+            let vertices = BMLoopIterator::new(face.loop_start.unwrap())
+                .map(|l| (*l).vertex)
+                .collect::<Vec<*mut BMVert>>();
+
+            let flattened_verts = vertices
+                .iter()
+                .flat_map(|v| (**v).vertex.position)
+                .collect::<Vec<f32>>();
+
+            let indices = earcutr::earcut(&flattened_verts, &[], 2).unwrap();
+
+            for index in indices {
+                if let Some(position) = all_bm_vertices
+                    .iter()
+                    .position(|val| val == &vertices[index])
+                {
+                    all_indices.push(position as u32);
+                } else {
+                    all_bm_vertices.push(vertices[index]);
+                    all_indices.push((all_bm_vertices.len() - 1) as u32);
+                }
+            }
+        }
+    }
+
+    unsafe {
+        let all_vertices = all_bm_vertices
+            .iter()
+            .map(|v| (*(*v)).vertex)
+            .collect::<Vec<Vertex>>();
+        (all_vertices, all_indices)
     }
 }
 

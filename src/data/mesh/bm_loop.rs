@@ -1,4 +1,4 @@
-use std::ptr::null_mut;
+use std::ptr::{null_mut, NonNull};
 
 use super::{bm_edge::BMEdge, bm_face::BMFace, bm_vert::BMVert, bmesh::BMesh};
 
@@ -76,4 +76,42 @@ pub fn bmesh_radial_loop_remove(e: *mut BMEdge, l: *mut BMLoop) {
 
 pub unsafe fn bm_kill_only_loop(bmesh: &mut BMesh, l: *mut BMLoop) {
     bmesh.loops.remove((*l).slab_index);
+}
+
+pub struct BMLoopIterator {
+    current: Option<*mut BMLoop>,
+    start: *mut BMLoop,
+    finished: bool,
+}
+
+impl BMLoopIterator {
+    pub fn new(start: *mut BMLoop) -> Self {
+        Self {
+            current: Some(start),
+            start,
+            finished: false,
+        }
+    }
+}
+
+impl Iterator for BMLoopIterator {
+    type Item = *mut BMLoop;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.finished {
+            return None;
+        }
+
+        let current = self.current.take()?;
+
+        unsafe {
+            if (*current).next == Some(self.start) {
+                self.finished = true;
+            } else {
+                self.current = (*current).next;
+            }
+        }
+
+        Some(current)
+    }
 }
