@@ -32,11 +32,11 @@ impl BMesh {
     }
 }
 
-pub fn bm_triangulate(bmesh: BMesh) -> (Vec<Vertex>, Vec<u32>) {
+pub fn bm_triangulate(bmesh: &mut BMesh) -> (Vec<Vertex>, Vec<u32>) {
     let mut all_bm_vertices: Vec<*mut BMVert> = vec![];
     let mut all_indices: Vec<u32> = vec![];
 
-    for (_, face) in bmesh.faces {
+    for (_, face) in &bmesh.faces {
         unsafe {
             let vertices = BMLoopIterator::new(face.loop_start.unwrap())
                 .map(|l| (*l).vertex)

@@ -33,13 +33,13 @@ use vulkano::{
 };
 use vulkano_win::VkSurfaceBuild;
 use winit::{
+    dpi::PhysicalPosition,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
 
 use crate::{
-    data::vertex::Vertex,
     shaders::flat,
     vulkan::{
         device::get_device,
@@ -59,7 +59,7 @@ fn build_path() -> Path {
     path_builder.build()
 }
 
-fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u32>) {
+fn vulkano_init() {
     let library = VulkanLibrary::new().unwrap();
     let required_extensions = vulkano_win::required_extensions(&library);
 
@@ -93,7 +93,10 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u32>) {
     }
     impl_vertex!(Vertex, position);
 
-    let vertex_buffer = CpuAccessibleBuffer::from_iter(
+    let mut square_mesh = create_square();
+    let (vertices, indices) = bm_triangulate(&mut square_mesh);
+
+    let mut vertex_buffer = CpuAccessibleBuffer::from_iter(
         &memory_allocator,
         BufferUsage {
             vertex_buffer: true,
@@ -104,7 +107,7 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u32>) {
     )
     .unwrap();
 
-    let index_buffer = CpuAccessibleBuffer::from_iter(
+    let mut index_buffer = CpuAccessibleBuffer::from_iter(
         &memory_allocator,
         BufferUsage {
             index_buffer: true,
@@ -116,7 +119,7 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u32>) {
     .unwrap();
 
     let uniform_buffer = CpuBufferPool::<flat::vs::ty::Data>::new(
-        memory_allocator,
+        memory_allocator.clone(),
         BufferUsage {
             uniform_buffer: true,
             ..BufferUsage::empty()
@@ -163,6 +166,8 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u32>) {
 
     let mut previous_frame_end = Some(sync::now(device.clone()).boxed());
 
+    let mut mouse_position: PhysicalPosition<f64> = PhysicalPosition { x: 0.0, y: 0.0 };
+
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
             event: WindowEvent::CloseRequested,
@@ -175,6 +180,65 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u32>) {
             ..
         } => {
             recreate_swapchain = true;
+        }
+        Event::WindowEvent {
+            event: WindowEvent::MouseInput { state, button, .. },
+            ..
+        } => match button {
+            winit::event::MouseButton::Left => match state {
+                winit::event::ElementState::Pressed => {}
+                winit::event::ElementState::Released => {}
+            },
+            winit::event::MouseButton::Right => {}
+            winit::event::MouseButton::Middle => {}
+            winit::event::MouseButton::Other(_) => {}
+        },
+        Event::WindowEvent {
+            event: WindowEvent::CursorMoved { position, .. },
+            ..
+        } => {
+            mouse_position = position;
+
+            let window = surface.object().unwrap().downcast_ref::<Window>().unwrap();
+            let width = window.inner_size().width as f64;
+            let height = window.inner_size().height as f64;
+
+            let rel_x = 6.0 * ((mouse_position.x / width) * 2.0 - 1.0);
+            let rel_y = 6.0 * (1.0 - (mouse_position.y / height) * 2.0);
+            // println!("{} {} ({},{})", width, height, rel_x, rel_y);
+
+            square_mesh
+                .vertices
+                .iter_mut()
+                .next()
+                .unwrap()
+                .1
+                .vertex
+                .position = [rel_x as f32, rel_y as f32];
+
+            let (vertices, indices) = bm_triangulate(&mut square_mesh);
+
+            vertex_buffer = CpuAccessibleBuffer::from_iter(
+                &memory_allocator,
+                BufferUsage {
+                    vertex_buffer: true,
+                    ..BufferUsage::empty()
+                },
+                false,
+                vertices,
+            )
+            .unwrap();
+
+            index_buffer = CpuAccessibleBuffer::from_iter(
+                &memory_allocator,
+                BufferUsage {
+                    index_buffer: true,
+                    ..BufferUsage::empty()
+                },
+                false,
+                indices,
+            )
+            .unwrap();
         }
         Event::RedrawEventsCleared => {
             let window = surface.object().unwrap().downcast_ref::<Window>().unwrap();
@@ -241,7 +305,7 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u32>) {
             builder
                 .begin_render_pass(
                     RenderPassBeginInfo {
-                        clear_values: vec![Some([0.0, 0.0, 1.0, 1.0].into())],
+                        clear_values: vec![Some([0.02, 0.02, 0.02, 1.0].into())],
                         ..RenderPassBeginInfo::framebuffer(
                             framebuffers[image_index as usize].clone(),
                         )
@@ -296,9 +360,5 @@ fn vulkano_init(vertices: Vec<Vertex>, indices: Vec<u32>) {
 }
 
 fn main() {
-    let square_mesh = create_square();
-
-    let (vertices, indices) = bm_triangulate(square_mesh);
-
-    vulkano_init(vertices, indices);
+    vulkano_init();
 }
