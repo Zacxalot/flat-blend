@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use vulkano::{
     device::{
-        physical::PhysicalDeviceType, Device, DeviceCreateInfo, DeviceExtensions, Queue,
+        physical::PhysicalDeviceType, Device, DeviceCreateInfo, DeviceExtensions, Features, Queue,
         QueueCreateInfo,
     },
     instance::Instance,
@@ -50,6 +50,11 @@ pub fn get_device(
         physical_device.properties().device_type,
     );
 
+    let device_features = Features {
+        fill_mode_non_solid: true,
+        ..Default::default()
+    };
+
     Device::new(
         physical_device,
         DeviceCreateInfo {
@@ -59,6 +64,8 @@ pub fn get_device(
                 queue_family_index,
                 ..Default::default()
             }],
+
+            enabled_features: device_features,
 
             ..Default::default()
         },

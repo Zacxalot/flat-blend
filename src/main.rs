@@ -23,7 +23,10 @@ use vulkano::{
     impl_vertex,
     instance::{Instance, InstanceCreateInfo},
     memory::allocator::{MemoryUsage, StandardMemoryAllocator},
-    pipeline::{graphics::viewport::Viewport, Pipeline, PipelineBindPoint},
+    pipeline::{
+        graphics::{rasterization::PolygonMode, viewport::Viewport},
+        Pipeline, PipelineBindPoint,
+    },
     swapchain::{
         acquire_next_image, AcquireError, SwapchainCreateInfo, SwapchainCreationError,
         SwapchainPresentInfo,
@@ -34,7 +37,7 @@ use vulkano::{
 use vulkano_win::VkSurfaceBuild;
 use winit::{
     dpi::PhysicalPosition,
-    event::{Event, WindowEvent},
+    event::{ElementState, Event, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
@@ -43,7 +46,7 @@ use crate::{
     shaders::flat,
     vulkan::{
         device::get_device,
-        pipeline::create_pipeline,
+        pipeline::{create_pipeline, update_pipeline},
         swapchain::{create_swapchain, window_size_dependent_setup},
         view::get_ortho,
     },
@@ -74,7 +77,7 @@ fn vulkano_init() {
     .unwrap();
 
     let event_loop = EventLoop::new();
-    let surface = WindowBuilder::new()
+    let mut surface = WindowBuilder::new()
         .build_vk_surface(&event_loop, instance.clone())
         .unwrap();
 
@@ -147,7 +150,13 @@ fn vulkano_init() {
     )
     .unwrap();
 
-    let pipeline = create_pipeline(render_pass.clone(), vs, fs, device.clone());
+    let mut pipeline = create_pipeline(
+        render_pass.clone(),
+        vs.clone(),
+        fs.clone(),
+        device.clone(),
+        PolygonMode::Fill,
+    );
 
     let mut viewport = Viewport {
         origin: [0.0, 0.0],
@@ -191,6 +200,62 @@ fn vulkano_init() {
             winit::event::MouseButton::Middle => {}
             winit::event::MouseButton::Other(_) => {}
         },
+        Event::WindowEvent {
+            event: WindowEvent::KeyboardInput { input, .. },
+            ..
+        } => {
+            if input.state == ElementState::Pressed {
+                if let Some(virtual_keykode) = input.virtual_keycode {
+                    match virtual_keykode {
+                        Z => {
+                            let mut polygon_mode = PolygonMode::Fill;
+                            if pipeline.rasterization_state().polygon_mode == PolygonMode::Fill {
+                                polygon_mode = PolygonMode::Line;
+                            }
+
+                            pipeline = create_pipeline(
+                                render_pass.clone(),
+                                vs.clone(),
+                                fs.clone(),
+                                device.clone(),
+                                polygon_mode,
+                            );
+                            if let Some(result) = update_pipeline(
+                                &mut recreate_swapchain,
+                                surface.clone(),
+                                &mut swapchain,
+                                &mut previous_frame_end,
+                                &mut framebuffers,
+                                render_pass.clone(),
+                                &mut viewport,
+                                uniform_buffer.clone(),
+                                pipeline.clone(),
+                                &descriptor_set_allocator,
+                                &command_buffer_allocator,
+                                queue.clone(),
+                                vertex_buffer.clone(),
+                                index_buffer.clone(),
+                            ) {
+                                match result {
+                                    Ok(future) => {
+                                        previous_frame_end = Some(future.boxed());
+                                    }
+                                    Err(FlushError::OutOfDate) => {
+                                        recreate_swapchain = true;
+                                        previous_frame_end =
+                                            Some(sync::now(device.clone()).boxed());
+                                    }
+                                    Err(e) => {
+                                        panic!("Failed to flush future: {:?}", e);
+                                    }
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
         Event::WindowEvent {
             event: WindowEvent::CursorMoved { position, .. },
             ..
@@ -236,117 +301,33 @@ fn vulkano_init() {
             .unwrap();
         }
         Event::RedrawEventsCleared => {
-            let window = surface.object().unwrap().downcast_ref::<Window>().unwrap();
-            let dimensions = window.inner_size();
-            if dimensions.width == 0 || dimensions.height == 0 {
-                return;
-            }
-
-            previous_frame_end.as_mut().unwrap().cleanup_finished();
-
-            if recreate_swapchain {
-                let (new_swapchain, new_images) = match swapchain.recreate(SwapchainCreateInfo {
-                    image_extent: dimensions.into(),
-                    ..swapchain.create_info()
-                }) {
-                    Ok(r) => r,
-                    Err(SwapchainCreationError::ImageExtentNotSupported { .. }) => return,
-                    Err(e) => panic!("Failed to recreate swapchain: {:?}", e),
-                };
-
-                swapchain = new_swapchain;
-                framebuffers =
-                    window_size_dependent_setup(&new_images, render_pass.clone(), &mut viewport);
-                recreate_swapchain = false;
-            }
-
-            let uniform_buffer_subbuffer = {
-                let uniform_data = flat::vs::ty::Data {
-                    view: get_ortho(swapchain.clone()).into(),
-                };
-
-                uniform_buffer.from_data(uniform_data).unwrap()
-            };
-
-            let layout = pipeline.layout().set_layouts().get(0).unwrap();
-            let set = PersistentDescriptorSet::new(
+            if let Some(result) = update_pipeline(
+                &mut recreate_swapchain,
+                surface.clone(),
+                &mut swapchain,
+                &mut previous_frame_end,
+                &mut framebuffers,
+                render_pass.clone(),
+                &mut viewport,
+                uniform_buffer.clone(),
+                pipeline.clone(),
                 &descriptor_set_allocator,
-                layout.clone(),
-                [WriteDescriptorSet::buffer(0, uniform_buffer_subbuffer)],
-            )
-            .unwrap();
-
-            let (image_index, suboptimal, acquire_future) =
-                match acquire_next_image(swapchain.clone(), None) {
-                    Ok(r) => r,
-                    Err(AcquireError::OutOfDate) => {
-                        recreate_swapchain = true;
-                        return;
-                    }
-                    Err(e) => panic!("Failed to acquire next image: {:?}", e),
-                };
-
-            if suboptimal {
-                recreate_swapchain = true;
-            }
-
-            let mut builder = AutoCommandBufferBuilder::primary(
                 &command_buffer_allocator,
-                queue.queue_family_index(),
-                CommandBufferUsage::OneTimeSubmit,
-            )
-            .unwrap();
-
-            builder
-                .begin_render_pass(
-                    RenderPassBeginInfo {
-                        clear_values: vec![Some([0.02, 0.02, 0.02, 1.0].into())],
-                        ..RenderPassBeginInfo::framebuffer(
-                            framebuffers[image_index as usize].clone(),
-                        )
-                    },
-                    SubpassContents::Inline,
-                )
-                .unwrap()
-                .set_viewport(0, [viewport.clone()])
-                .bind_pipeline_graphics(pipeline.clone())
-                .bind_descriptor_sets(
-                    PipelineBindPoint::Graphics,
-                    pipeline.layout().clone(),
-                    0,
-                    set,
-                )
-                .bind_vertex_buffers(0, vertex_buffer.clone())
-                .bind_index_buffer(index_buffer.clone())
-                .draw_indexed(index_buffer.len() as u32, 1, 0, 0, 0)
-                .unwrap()
-                .end_render_pass()
-                .unwrap();
-
-            let command_buffer = builder.build().unwrap();
-
-            let future = previous_frame_end
-                .take()
-                .unwrap()
-                .join(acquire_future)
-                .then_execute(queue.clone(), command_buffer)
-                .unwrap()
-                .then_swapchain_present(
-                    queue.clone(),
-                    SwapchainPresentInfo::swapchain_image_index(swapchain.clone(), image_index),
-                )
-                .then_signal_fence_and_flush();
-
-            match future {
-                Ok(future) => {
-                    previous_frame_end = Some(future.boxed());
-                }
-                Err(FlushError::OutOfDate) => {
-                    recreate_swapchain = true;
-                    previous_frame_end = Some(sync::now(device.clone()).boxed());
-                }
-                Err(e) => {
-                    panic!("Failed to flush future: {:?}", e);
+                queue.clone(),
+                vertex_buffer.clone(),
+                index_buffer.clone(),
+            ) {
+                match result {
+                    Ok(future) => {
+                        previous_frame_end = Some(future.boxed());
+                    }
+                    Err(FlushError::OutOfDate) => {
+                        recreate_swapchain = true;
+                        previous_frame_end = Some(sync::now(device.clone()).boxed());
+                    }
+                    Err(e) => {
+                        panic!("Failed to flush future: {:?}", e);
+                    }
                 }
             }
         }
