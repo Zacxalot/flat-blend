@@ -207,7 +207,7 @@ fn vulkano_init() {
             if input.state == ElementState::Pressed {
                 if let Some(virtual_keykode) = input.virtual_keycode {
                     match virtual_keykode {
-                        Z => {
+                        VirtualKeyCode::Z => {
                             let mut polygon_mode = PolygonMode::Fill;
                             if pipeline.rasterization_state().polygon_mode == PolygonMode::Fill {
                                 polygon_mode = PolygonMode::Line;
