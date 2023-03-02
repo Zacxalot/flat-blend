@@ -72,6 +72,16 @@ pub fn bm_triangulate(bmesh: &mut BMesh) -> (Vec<Vertex>, Vec<u32>) {
     }
 }
 
+pub fn bm_edge_list(bmesh: &mut BMesh) -> Vec<Vertex> {
+    unsafe {
+        bmesh
+            .edges
+            .iter()
+            .flat_map(|(_, edge)| [(*edge.v0).vertex, (*edge.v1).vertex])
+            .collect::<Vec<Vertex>>()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::data::{

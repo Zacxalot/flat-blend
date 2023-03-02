@@ -57,7 +57,10 @@ pub fn create_pipeline(
         // We need to indicate the layout of the vertices.
         .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
         // The content of the vertex buffer describes a list of triangles.
-        .input_assembly_state(InputAssemblyState::new())
+        .input_assembly_state(
+            InputAssemblyState::new()
+                .topology(vulkano::pipeline::graphics::input_assembly::PrimitiveTopology::LineList),
+        )
         // A Vulkan shader can in theory contain multiple entry points, so we have to specify
         // which one.
         .vertex_shader(vs.entry_point("main").unwrap(), ())
@@ -85,7 +88,6 @@ pub fn update_pipeline(
     command_buffer_allocator: &StandardCommandBufferAllocator,
     queue: Arc<Queue>,
     vertex_buffer: Arc<CpuAccessibleBuffer<[Vertex]>>,
-    index_buffer: Arc<CpuAccessibleBuffer<[u32]>>,
 ) -> Option<
     Result<
         FenceSignalFuture<
@@ -175,8 +177,7 @@ pub fn update_pipeline(
             set,
         )
         .bind_vertex_buffers(0, vertex_buffer.clone())
-        .bind_index_buffer(index_buffer.clone())
-        .draw_indexed(index_buffer.len() as u32, 1, 0, 0, 0)
+        .draw(vertex_buffer.len() as u32, 1, 0, 0)
         .unwrap()
         .end_render_pass()
         .unwrap();

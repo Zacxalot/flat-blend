@@ -43,6 +43,7 @@ use winit::{
 };
 
 use crate::{
+    data::mesh::bmesh::bm_edge_list,
     shaders::flat,
     vulkan::{
         device::get_device,
@@ -97,7 +98,9 @@ fn vulkano_init() {
     impl_vertex!(Vertex, position);
 
     let mut square_mesh = create_square();
-    let (vertices, indices) = bm_triangulate(&mut square_mesh);
+    // let (vertices, indices) = bm_triangulate(&mut square_mesh);
+    let vertices = bm_edge_list(&mut square_mesh);
+    println!("{:?}", vertices);
 
     let mut vertex_buffer = CpuAccessibleBuffer::from_iter(
         &memory_allocator,
@@ -110,16 +113,16 @@ fn vulkano_init() {
     )
     .unwrap();
 
-    let mut index_buffer = CpuAccessibleBuffer::from_iter(
-        &memory_allocator,
-        BufferUsage {
-            index_buffer: true,
-            ..BufferUsage::empty()
-        },
-        false,
-        indices,
-    )
-    .unwrap();
+    // let mut index_buffer = CpuAccessibleBuffer::from_iter(
+    //     &memory_allocator,
+    //     BufferUsage {
+    //         index_buffer: true,
+    //         ..BufferUsage::empty()
+    //     },
+    //     false,
+    //     [],
+    // )
+    // .unwrap();
 
     let uniform_buffer = CpuBufferPool::<flat::vs::ty::Data>::new(
         memory_allocator.clone(),
@@ -234,7 +237,6 @@ fn vulkano_init() {
                                 &command_buffer_allocator,
                                 queue.clone(),
                                 vertex_buffer.clone(),
-                                index_buffer.clone(),
                             ) {
                                 match result {
                                     Ok(future) => {
@@ -276,7 +278,8 @@ fn vulkano_init() {
                 .vertex
                 .position = [rel_x as f32, rel_y as f32];
 
-            let (vertices, indices) = bm_triangulate(&mut square_mesh);
+            // let (vertices, indices) = bm_triangulate(&mut square_mesh);
+            let vertices = bm_edge_list(&mut square_mesh);
 
             vertex_buffer = CpuAccessibleBuffer::from_iter(
                 &memory_allocator,
@@ -289,16 +292,16 @@ fn vulkano_init() {
             )
             .unwrap();
 
-            index_buffer = CpuAccessibleBuffer::from_iter(
-                &memory_allocator,
-                BufferUsage {
-                    index_buffer: true,
-                    ..BufferUsage::empty()
-                },
-                false,
-                indices,
-            )
-            .unwrap();
+            // index_buffer = CpuAccessibleBuffer::from_iter(
+            //     &memory_allocator,
+            //     BufferUsage {
+            //         index_buffer: true,
+            //         ..BufferUsage::empty()
+            //     },
+            //     false,
+            //     indices,
+            // )
+            // .unwrap();
         }
         Event::RedrawEventsCleared => {
             if let Some(result) = update_pipeline(
@@ -315,7 +318,6 @@ fn vulkano_init() {
                 &command_buffer_allocator,
                 queue.clone(),
                 vertex_buffer.clone(),
-                index_buffer.clone(),
             ) {
                 match result {
                     Ok(future) => {
