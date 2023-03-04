@@ -9,7 +9,7 @@ use vulkano::{
 use winit::window::Window;
 
 /// This method is called once during initialization, then again whenever the window is resized
-pub fn size_viewport(images: &[Arc<SwapchainImage>], viewport: &mut Viewport) {
+pub fn resize_viewport(images: &[Arc<SwapchainImage>], viewport: &mut Viewport) {
     let dimensions = images[0].dimensions().width_height();
     viewport.dimensions = [dimensions[0] as f32, dimensions[1] as f32];
 

@@ -23,7 +23,7 @@ use super::{
         flat,
         shader_loader::{load_shaders, LoadedShaders},
     },
-    swapchain::{create_swapchain, size_viewport},
+    swapchain::{create_swapchain, resize_viewport},
 };
 
 #[allow(dead_code)]
@@ -117,7 +117,7 @@ pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
         depth_range: 0.0..1.0,
     };
 
-    size_viewport(&images, &mut viewport);
+    resize_viewport(&images, &mut viewport);
 
     let descriptor_set_allocator = StandardDescriptorSetAllocator::new(device.clone());
 

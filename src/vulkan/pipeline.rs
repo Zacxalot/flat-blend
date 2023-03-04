@@ -8,7 +8,7 @@ use vulkano::{
 };
 use winit::window::Window;
 
-use crate::vulkan::swapchain::size_viewport;
+use crate::vulkan::swapchain::resize_viewport;
 
 use super::init::VulkanState;
 
@@ -53,7 +53,7 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
         };
 
         state.swapchain = new_swapchain;
-        size_viewport(&new_images, &mut state.viewport);
+        resize_viewport(&new_images, &mut state.viewport);
         state.recreate_swapchain = false;
     }
 
