@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use enum_map::{enum_map, Enum, EnumMap};
 use vulkano::{device::Device, shader::ShaderModule};

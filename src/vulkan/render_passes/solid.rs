@@ -3,6 +3,7 @@ use std::sync::Arc;
 use vulkano::{
     device::Device,
     format::Format,
+    image::AttachmentImage,
     pipeline::{
         graphics::{
             input_assembly::InputAssemblyState,
@@ -29,7 +30,7 @@ pub fn solid_draw_pass(
         device,
         attachments: {
             color: {
-                load: Clear,
+                load: Load,
                 store: Store,
                 format: format,
                 samples: 1,
