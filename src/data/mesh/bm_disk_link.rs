@@ -39,6 +39,7 @@ pub fn bmesh_disk_edge_append(e: &mut BMEdge, v: *mut BMVert) {
     }
 }
 
+#[allow(dead_code)]
 pub fn bmesh_disk_edge_remove(e: *mut BMEdge, v: *mut BMVert) {
     unsafe {
         let dl1 = bmesh_disk_edge_link_from_vert(e, v);

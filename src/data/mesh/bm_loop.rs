@@ -1,5 +1,3 @@
-
-
 use super::{bm_edge::BMEdge, bm_face::BMFace, bm_vert::BMVert, bmesh::BMesh};
 
 pub struct BMLoop {
@@ -85,6 +83,7 @@ pub struct BMLoopIterator {
 }
 
 impl BMLoopIterator {
+    #[allow(dead_code)]
     pub fn new(start: *mut BMLoop) -> Self {
         Self {
             current: Some(start),

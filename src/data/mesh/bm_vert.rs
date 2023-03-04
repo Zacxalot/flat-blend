@@ -1,6 +1,4 @@
-
-
-use crate::data::{vertex::Vertex};
+use crate::data::vertex::Vertex;
 
 use super::{
     bm_edge::{bm_edge_kill, BMEdge},
@@ -32,6 +30,7 @@ pub fn bm_vert_create(bmesh: &mut BMesh) -> *mut BMVert {
     v
 }
 
+#[allow(dead_code)]
 pub fn bm_vert_kill(bmesh: &mut BMesh, vert: *mut BMVert) {
     unsafe {
         while let Some(edge) = (*vert).edge {

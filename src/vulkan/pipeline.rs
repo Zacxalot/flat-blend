@@ -112,7 +112,7 @@ pub fn render_frame(
         };
 
         *(swapchain) = new_swapchain;
-        *(framebuffers) = window_size_dependent_setup(&new_images, render_pass.clone(), viewport);
+        *(framebuffers) = window_size_dependent_setup(&new_images, render_pass, viewport);
         *(recreate_swapchain) = false;
     }
 

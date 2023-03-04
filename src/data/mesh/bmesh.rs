@@ -32,6 +32,7 @@ impl BMesh {
     }
 }
 
+#[allow(dead_code)]
 pub fn bm_triangulate(bmesh: &mut BMesh) -> (Vec<Vertex>, Vec<u32>) {
     let mut all_bm_vertices: Vec<*mut BMVert> = vec![];
     let mut all_indices: Vec<u32> = vec![];

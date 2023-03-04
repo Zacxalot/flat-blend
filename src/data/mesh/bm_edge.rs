@@ -35,6 +35,7 @@ pub fn bm_edge_create(bmesh: &mut BMesh, v0: *mut BMVert, v1: *mut BMVert) -> *m
     e
 }
 
+#[allow(dead_code)]
 pub fn bm_edge_kill(bmesh: &mut BMesh, edge: *mut BMEdge) {
     unsafe {
         while let Some(r#loop) = (*edge).r#loop {
@@ -48,6 +49,7 @@ pub fn bm_edge_kill(bmesh: &mut BMesh, edge: *mut BMEdge) {
     }
 }
 
+#[allow(dead_code)]
 pub fn bm_kill_only_edge(bmesh: &mut BMesh, edge: *mut BMEdge) {
     unsafe {
         bmesh.edges.remove((*edge).slab_index);
