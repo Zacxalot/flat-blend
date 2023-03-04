@@ -60,23 +60,9 @@ pub fn solid_draw_pipeline(
                 vulkano::pipeline::graphics::input_assembly::PrimitiveTopology::TriangleList,
             ),
         )
-        .vertex_shader(
-            shaders
-                .get(&ShaderKey::FlatVs)
-                .unwrap()
-                .entry_point("main")
-                .unwrap(),
-            (),
-        )
+        .vertex_shader(shaders[ShaderKey::FlatVs].entry_point("main").unwrap(), ())
         .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
         .rasterization_state(rasterization_state)
-        .fragment_shader(
-            shaders
-                .get(&ShaderKey::FlatFs)
-                .unwrap()
-                .entry_point("main")
-                .unwrap(),
-            (),
-        )
+        .fragment_shader(shaders[ShaderKey::FlatFs].entry_point("main").unwrap(), ())
         .build(device)
 }

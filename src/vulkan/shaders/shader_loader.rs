@@ -1,22 +1,23 @@
 use std::{collections::HashMap, sync::Arc};
 
+use enum_map::{enum_map, Enum, EnumMap};
 use vulkano::{device::Device, shader::ShaderModule};
 
 use super::flat;
 
-pub type LoadedShaders = HashMap<ShaderKey, Arc<ShaderModule>>;
+pub type LoadedShaders = EnumMap<ShaderKey, Arc<ShaderModule>>;
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Enum)]
 pub enum ShaderKey {
     FlatVs,
     FlatFs,
 }
 
 pub fn load_shaders(device: Arc<Device>) -> Arc<LoadedShaders> {
-    let mut shaders: HashMap<ShaderKey, Arc<ShaderModule>> = HashMap::new();
+    let map = enum_map! {
+        ShaderKey::FlatVs => flat::vs::load(device.clone()).unwrap(),
+        ShaderKey::FlatFs => flat::fs::load(device.clone()).unwrap()
+    };
 
-    shaders.insert(ShaderKey::FlatVs, flat::vs::load(device.clone()).unwrap());
-    shaders.insert(ShaderKey::FlatFs, flat::fs::load(device).unwrap());
-
-    Arc::from(shaders)
+    Arc::from(map)
 }
