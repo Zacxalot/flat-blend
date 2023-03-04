@@ -9,18 +9,14 @@ use vulkano::{
     descriptor_set::{
         allocator::StandardDescriptorSetAllocator, PersistentDescriptorSet, WriteDescriptorSet,
     },
-    device::{Device, Queue},
+    device::{Queue},
     pipeline::{
         graphics::{
-            input_assembly::InputAssemblyState,
-            rasterization::{CullMode, PolygonMode, RasterizationState},
-            vertex_input::BuffersDefinition,
-            viewport::{Viewport, ViewportState},
+            viewport::{Viewport},
         },
-        GraphicsPipeline, Pipeline, PipelineBindPoint, StateMode,
+        GraphicsPipeline, Pipeline, PipelineBindPoint,
     },
-    render_pass::{Framebuffer, RenderPass, Subpass},
-    shader::ShaderModule,
+    render_pass::{Framebuffer, RenderPass},
     swapchain::{
         acquire_next_image, AcquireError, PresentFuture, Surface, Swapchain,
         SwapchainAcquireFuture, SwapchainCreateInfo, SwapchainCreationError, SwapchainPresentInfo,
@@ -32,41 +28,6 @@ use winit::window::Window;
 use crate::data::vertex::Vertex;
 
 use super::{shaders::flat::vs::ty::Data, swapchain::window_size_dependent_setup, view::get_ortho};
-
-pub fn create_pipeline(
-    render_pass: Arc<RenderPass>,
-    vs: Arc<ShaderModule>,
-    fs: Arc<ShaderModule>,
-    device: Arc<Device>,
-    polygon_mode: PolygonMode,
-) -> Arc<GraphicsPipeline> {
-    let rasterization_state = RasterizationState {
-        cull_mode: StateMode::Fixed(CullMode::None),
-        polygon_mode,
-        ..Default::default()
-    };
-
-    GraphicsPipeline::start()
-        .render_pass(Subpass::from(render_pass, 0).unwrap())
-        // We need to indicate the layout of the vertices.
-        .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
-        // The content of the vertex buffer describes a list of triangles.
-        .input_assembly_state(
-            InputAssemblyState::new()
-                .topology(vulkano::pipeline::graphics::input_assembly::PrimitiveTopology::LineList),
-        )
-        // A Vulkan shader can in theory contain multiple entry points, so we have to specify
-        // which one.
-        .vertex_shader(vs.entry_point("main").unwrap(), ())
-        // Use a resizable viewport set to draw over the entire window
-        .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
-        .rasterization_state(rasterization_state)
-        // See `vertex_shader`.
-        .fragment_shader(fs.entry_point("main").unwrap(), ())
-        // Now that our builder is filled, we call `build()` to obtain an actual pipeline.
-        .build(device)
-        .unwrap()
-}
 
 pub fn render_frame(
     recreate_swapchain: &mut bool,
