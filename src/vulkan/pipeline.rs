@@ -1,28 +1,16 @@
-use std::sync::Arc;
-
 use vulkano::{
-    buffer::{CpuAccessibleBuffer, CpuBufferPool, TypedBufferAccess},
-    command_buffer::{
-        allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder,
-        CommandBufferExecFuture, CommandBufferUsage, RenderPassBeginInfo, SubpassContents,
-    },
-    descriptor_set::{
-        allocator::StandardDescriptorSetAllocator, PersistentDescriptorSet, WriteDescriptorSet,
-    },
-    device::Queue,
-    pipeline::{graphics::viewport::Viewport, GraphicsPipeline, Pipeline, PipelineBindPoint},
-    render_pass::{Framebuffer, RenderPass},
+    command_buffer::{AutoCommandBufferBuilder, CommandBufferExecFuture, CommandBufferUsage},
     swapchain::{
-        acquire_next_image, AcquireError, PresentFuture, Surface, Swapchain,
-        SwapchainAcquireFuture, SwapchainCreateInfo, SwapchainCreationError, SwapchainPresentInfo,
+        acquire_next_image, AcquireError, PresentFuture, SwapchainAcquireFuture,
+        SwapchainCreateInfo, SwapchainCreationError, SwapchainPresentInfo,
     },
     sync::{FenceSignalFuture, GpuFuture, JoinFuture},
 };
 use winit::window::Window;
 
-use crate::{data::vertex::Vertex, vulkan::swapchain::size_viewport};
+use crate::vulkan::swapchain::size_viewport;
 
-use super::{init::VulkanState, shaders::flat::vs::ty::Data, view::get_ortho};
+use super::init::VulkanState;
 
 type RenderFrameFutureFence = Option<
     Result<
@@ -69,13 +57,13 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
         state.recreate_swapchain = false;
     }
 
-    let uniform_buffer_subbuffer = {
-        let uniform_data = crate::vulkan::shaders::flat::vs::ty::Data {
-            view: get_ortho(state.swapchain.clone()).into(),
-        };
+    // let _uniform_buffer_subbuffer = {
+    //     let _uniform_data = crate::vulkan::shaders::flat::vs::ty::Data {
+    //         view: get_ortho(state.swapchain.clone()).into(),
+    //     };
 
-        // uniform_buffer.from_data(uniform_data).unwrap()
-    };
+    //     // uniform_buffer.from_data(uniform_data).unwrap()
+    // };
 
     // let layout = pipeline.layout().set_layouts().get(0).unwrap();
     // let set = PersistentDescriptorSet::new(
@@ -99,7 +87,7 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
         state.recreate_swapchain = true;
     }
 
-    let mut builder = AutoCommandBufferBuilder::primary(
+    let builder = AutoCommandBufferBuilder::primary(
         &state.command_buffer_allocator,
         state.queue.queue_family_index(),
         CommandBufferUsage::OneTimeSubmit,

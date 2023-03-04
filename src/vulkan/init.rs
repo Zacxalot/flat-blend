@@ -9,7 +9,6 @@ use vulkano::{
     instance::{Instance, InstanceCreateInfo},
     memory::allocator::{MemoryUsage, StandardMemoryAllocator},
     pipeline::graphics::viewport::Viewport,
-    render_pass::Framebuffer,
     swapchain::{Surface, Swapchain},
     sync::{self, GpuFuture},
     VulkanLibrary,
@@ -20,7 +19,6 @@ use winit::{event_loop::EventLoop, window::WindowBuilder};
 use super::{
     buffers::{IndexBuffers, VertexBuffers},
     device::get_device,
-    render_passes::solid::solid_draw_pass,
     shaders::{
         flat,
         shader_loader::{load_shaders, LoadedShaders},
@@ -99,7 +97,7 @@ pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
     // )
     // .unwrap();
 
-    let uniform_buffer = CpuBufferPool::<flat::vs::ty::Data>::new(
+    let _uniform_buffer = CpuBufferPool::<flat::vs::ty::Data>::new(
         memory_allocator,
         BufferUsage {
             uniform_buffer: true,

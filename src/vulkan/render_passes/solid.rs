@@ -3,7 +3,6 @@ use std::sync::Arc;
 use vulkano::{
     device::Device,
     format::Format,
-    image::AttachmentImage,
     pipeline::{
         graphics::{
             input_assembly::InputAssemblyState,

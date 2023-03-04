@@ -2,9 +2,8 @@ use std::sync::Arc;
 
 use vulkano::{
     device::Device,
-    image::{view::ImageView, ImageAccess, ImageUsage, SwapchainImage},
+    image::{ImageAccess, ImageUsage, SwapchainImage},
     pipeline::graphics::viewport::Viewport,
-    render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass},
     swapchain::{Surface, Swapchain, SwapchainCreateInfo},
 };
 use winit::window::Window;

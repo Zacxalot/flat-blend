@@ -5,6 +5,7 @@ use crate::data::{
     vertex::Vertex,
 };
 
+#[allow(dead_code)]
 pub fn create_square() -> BMesh {
     let mut bmesh = BMesh::new();
 
