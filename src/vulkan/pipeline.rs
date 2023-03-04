@@ -29,15 +29,9 @@ use vulkano::{
 };
 use winit::window::Window;
 
-use crate::{
-    data::vertex::Vertex,
-    shaders::flat::{self, vs::ty::Data},
-};
+use crate::data::vertex::Vertex;
 
-use super::{
-    swapchain::{self, window_size_dependent_setup},
-    view::get_ortho,
-};
+use super::{shaders::flat::vs::ty::Data, swapchain::window_size_dependent_setup, view::get_ortho};
 
 pub fn create_pipeline(
     render_pass: Arc<RenderPass>,
@@ -74,7 +68,7 @@ pub fn create_pipeline(
         .unwrap()
 }
 
-pub fn update_pipeline(
+pub fn render_frame(
     recreate_swapchain: &mut bool,
     surface: Arc<Surface>,
     swapchain: &mut Arc<Swapchain>,
@@ -123,7 +117,7 @@ pub fn update_pipeline(
     }
 
     let uniform_buffer_subbuffer = {
-        let uniform_data = flat::vs::ty::Data {
+        let uniform_data = crate::vulkan::shaders::flat::vs::ty::Data {
             view: get_ortho(swapchain.clone()).into(),
         };
 
@@ -192,7 +186,7 @@ pub fn update_pipeline(
             .then_execute(queue.clone(), command_buffer)
             .unwrap()
             .then_swapchain_present(
-                queue.clone(),
+                queue,
                 SwapchainPresentInfo::swapchain_image_index(swapchain.clone(), image_index),
             )
             .then_signal_fence_and_flush(),

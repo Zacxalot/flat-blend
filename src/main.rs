@@ -1,42 +1,24 @@
 mod data;
-mod shaders;
 mod shapes;
 mod vulkan;
 
 use std::sync::Arc;
 
-use bytemuck::{Pod, Zeroable};
-
-use data::mesh::bmesh::bm_triangulate;
-use lyon::{geom::point, path::Path};
-
 use shapes::square::create_square;
 use vulkano::{
-    buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool, TypedBufferAccess},
-    command_buffer::{
-        allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder, CommandBufferUsage,
-        RenderPassBeginInfo, SubpassContents,
-    },
-    descriptor_set::{
-        allocator::StandardDescriptorSetAllocator, PersistentDescriptorSet, WriteDescriptorSet,
-    },
-    impl_vertex,
+    buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
+    command_buffer::allocator::StandardCommandBufferAllocator,
+    descriptor_set::allocator::StandardDescriptorSetAllocator,
+    device::Device,
     instance::{Instance, InstanceCreateInfo},
     memory::allocator::{MemoryUsage, StandardMemoryAllocator},
-    pipeline::{
-        graphics::{rasterization::PolygonMode, viewport::Viewport},
-        Pipeline, PipelineBindPoint,
-    },
-    swapchain::{
-        acquire_next_image, AcquireError, SwapchainCreateInfo, SwapchainCreationError,
-        SwapchainPresentInfo,
-    },
+    pipeline::graphics::{rasterization::PolygonMode, viewport::Viewport},
+    swapchain::Surface,
     sync::{self, FlushError, GpuFuture},
     VulkanLibrary,
 };
 use vulkano_win::VkSurfaceBuild;
 use winit::{
-    dpi::PhysicalPosition,
     event::{ElementState, Event, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
@@ -44,23 +26,18 @@ use winit::{
 
 use crate::{
     data::mesh::bmesh::bm_edge_list,
-    shaders::flat,
     vulkan::{
         device::get_device,
-        pipeline::{create_pipeline, update_pipeline},
+        pipeline::render_frame,
+        render_passes::solid::{solid_draw_pass, solid_draw_pipeline},
+        shaders::shader_loader::load_shaders,
         swapchain::{create_swapchain, window_size_dependent_setup},
-        view::get_ortho,
     },
 };
 
-fn build_path() -> Path {
-    let mut path_builder = Path::builder();
-    path_builder.begin(point(-1.0, 0.0));
-    path_builder.line_to(point(0.0, 1.0));
-    path_builder.line_to(point(1.0, 0.0));
-    path_builder.line_to(point(0.0, -1.0));
-    path_builder.end(true);
-    path_builder.build()
+struct VulkanState {
+    device: Arc<Device>,
+    surface: Arc<Surface>,
 }
 
 fn vulkano_init() {
@@ -78,7 +55,7 @@ fn vulkano_init() {
     .unwrap();
 
     let event_loop = EventLoop::new();
-    let mut surface = WindowBuilder::new()
+    let surface = WindowBuilder::new()
         .build_vk_surface(&event_loop, instance.clone())
         .unwrap();
 
@@ -89,13 +66,6 @@ fn vulkano_init() {
     let (mut swapchain, images) = create_swapchain(device.clone(), surface.clone());
 
     let memory_allocator = Arc::new(StandardMemoryAllocator::new_default(device.clone()));
-
-    #[repr(C)]
-    #[derive(Clone, Copy, Debug, Default, Zeroable, Pod)]
-    struct Vertex {
-        position: [f32; 2],
-    }
-    impl_vertex!(Vertex, position);
 
     let mut square_mesh = create_square();
     // let (vertices, indices) = bm_triangulate(&mut square_mesh);
@@ -120,11 +90,11 @@ fn vulkano_init() {
     //         ..BufferUsage::empty()
     //     },
     //     false,
-    //     [],
+    //     [],#
     // )
     // .unwrap();
 
-    let uniform_buffer = CpuBufferPool::<flat::vs::ty::Data>::new(
+    let uniform_buffer = CpuBufferPool::<vulkan::shaders::flat::vs::ty::Data>::new(
         memory_allocator.clone(),
         BufferUsage {
             uniform_buffer: true,
@@ -133,33 +103,10 @@ fn vulkano_init() {
         MemoryUsage::Upload,
     );
 
-    let vs = flat::vs::load(device.clone()).unwrap();
-    let fs = flat::fs::load(device.clone()).unwrap();
+    let shaders = load_shaders(device.clone());
+    let render_pass = solid_draw_pass(device.clone(), swapchain.image_format()).unwrap();
 
-    let render_pass = vulkano::single_pass_renderpass!(
-        device.clone(),
-        attachments: {
-            color: {
-                load: Clear,
-                store: Store,
-                format: swapchain.image_format(),
-                samples: 1,
-            }
-        },
-        pass: {
-            color: [color],
-            depth_stencil: {}
-        }
-    )
-    .unwrap();
-
-    let mut pipeline = create_pipeline(
-        render_pass.clone(),
-        vs.clone(),
-        fs.clone(),
-        device.clone(),
-        PolygonMode::Fill,
-    );
+    let pipeline = solid_draw_pipeline(render_pass.clone(), device.clone(), shaders).unwrap();
 
     let mut viewport = Viewport {
         origin: [0.0, 0.0],
@@ -208,53 +155,15 @@ fn vulkano_init() {
             ..
         } => {
             if input.state == ElementState::Pressed {
-                if let Some(virtual_keykode) = input.virtual_keycode {
-                    match virtual_keykode {
-                        VirtualKeyCode::Z => {
-                            let mut polygon_mode = PolygonMode::Fill;
-                            if pipeline.rasterization_state().polygon_mode == PolygonMode::Fill {
-                                polygon_mode = PolygonMode::Line;
-                            }
-
-                            pipeline = create_pipeline(
-                                render_pass.clone(),
-                                vs.clone(),
-                                fs.clone(),
-                                device.clone(),
-                                polygon_mode,
-                            );
-                            if let Some(result) = update_pipeline(
-                                &mut recreate_swapchain,
-                                surface.clone(),
-                                &mut swapchain,
-                                &mut previous_frame_end,
-                                &mut framebuffers,
-                                render_pass.clone(),
-                                &mut viewport,
-                                uniform_buffer.clone(),
-                                pipeline.clone(),
-                                &descriptor_set_allocator,
-                                &command_buffer_allocator,
-                                queue.clone(),
-                                vertex_buffer.clone(),
-                            ) {
-                                match result {
-                                    Ok(future) => {
-                                        previous_frame_end = Some(future.boxed());
-                                    }
-                                    Err(FlushError::OutOfDate) => {
-                                        recreate_swapchain = true;
-                                        previous_frame_end =
-                                            Some(sync::now(device.clone()).boxed());
-                                    }
-                                    Err(e) => {
-                                        panic!("Failed to flush future: {:?}", e);
-                                    }
-                                }
-                            }
+                #[allow(clippy::single_match)]
+                match input.virtual_keycode {
+                    Some(VirtualKeyCode::Z) => {
+                        let mut polygon_mode = PolygonMode::Fill;
+                        if pipeline.rasterization_state().polygon_mode == PolygonMode::Fill {
+                            polygon_mode = PolygonMode::Line;
                         }
-                        _ => {}
                     }
+                    _ => {}
                 }
             }
         }
@@ -304,7 +213,7 @@ fn vulkano_init() {
             // .unwrap();
         }
         Event::RedrawEventsCleared => {
-            if let Some(result) = update_pipeline(
+            if let Some(result) = render_frame(
                 &mut recreate_swapchain,
                 surface.clone(),
                 &mut swapchain,
