@@ -11,10 +11,10 @@ use vulkano::{
 };
 use winit::window::Window;
 
-use crate::vulkan::{attachment_images::create_attachment_images, swapchain::resize_viewport};
+use crate::vulkan::{attachment_images::create_attachment_images};
 
 use super::{
-    attachment_images::{self, AttachmentImages},
+    attachment_images::{AttachmentImages},
     init::VulkanState,
 };
 

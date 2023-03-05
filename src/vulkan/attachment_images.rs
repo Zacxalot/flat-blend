@@ -4,7 +4,7 @@ use enum_map::{enum_map, Enum, EnumMap};
 use vulkano::{
     format::Format,
     image::{AttachmentImage, ImageUsage},
-    memory::allocator::{FreeListAllocator, GenericMemoryAllocator, MemoryAllocator},
+    memory::allocator::{FreeListAllocator, GenericMemoryAllocator},
 };
 
 pub type AttachmentImageMap = EnumMap<AttachmentImages, Arc<AttachmentImage>>;

@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use enum_map::{enum_map, EnumMap};
+use enum_map::{enum_map};
 use vulkano::{
     buffer::{BufferUsage, CpuBufferPool},
     command_buffer::allocator::StandardCommandBufferAllocator,
     descriptor_set::allocator::StandardDescriptorSetAllocator,
     device::{Device, Queue},
-    image::{attachment, AttachmentImage, ImageAccess, SwapchainImage},
+    image::{ImageAccess, SwapchainImage},
     instance::{Instance, InstanceCreateInfo},
     memory::allocator::{
         FreeListAllocator, GenericMemoryAllocator, MemoryUsage, StandardMemoryAllocator,
@@ -20,14 +20,14 @@ use vulkano_win::VkSurfaceBuild;
 use winit::{event_loop::EventLoop, window::WindowBuilder};
 
 use super::{
-    attachment_images::{self, create_attachment_images, AttachmentImageMap},
+    attachment_images::{create_attachment_images, AttachmentImageMap},
     buffers::{IndexBuffers, VertexBuffers},
     device::get_device,
     shaders::{
         flat,
         shader_loader::{load_shaders, LoadedShaders},
     },
-    swapchain::{create_swapchain, resize_viewport},
+    swapchain::{create_swapchain},
 };
 
 #[allow(dead_code)]
