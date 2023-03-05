@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use enum_map::{enum_map};
+use enum_map::{enum_map, EnumMap};
 use vulkano::{
-    buffer::{BufferUsage, CpuBufferPool},
+    buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
     command_buffer::allocator::StandardCommandBufferAllocator,
     descriptor_set::allocator::StandardDescriptorSetAllocator,
     device::{Device, Queue},
@@ -12,6 +12,7 @@ use vulkano::{
         FreeListAllocator, GenericMemoryAllocator, MemoryUsage, StandardMemoryAllocator,
     },
     pipeline::graphics::viewport::Viewport,
+    render_pass::RenderPass,
     swapchain::{Surface, Swapchain},
     sync::{self, GpuFuture},
     VulkanLibrary,
@@ -19,15 +20,21 @@ use vulkano::{
 use vulkano_win::VkSurfaceBuild;
 use winit::{event_loop::EventLoop, window::WindowBuilder};
 
+use crate::data::vertex::Vertex;
+
 use super::{
-    attachment_images::{create_attachment_images, AttachmentImageMap},
+    attachment_images::{
+        create_attachment_images, create_frame_buffers, AttachmentImageMap, FrameBufferMap,
+    },
     buffers::{IndexBuffers, VertexBuffers},
     device::get_device,
+    pipeline::{load_pipelines, Pipelines},
+    render_passes::render_pass_loader::{load_render_passes, RenderPassKeys, RenderPasses},
     shaders::{
-        flat,
+        flat::{self, vs::ty::Data},
         shader_loader::{load_shaders, LoadedShaders},
     },
-    swapchain::{create_swapchain},
+    swapchain::create_swapchain,
 };
 
 #[allow(dead_code)]
@@ -45,8 +52,12 @@ pub struct VulkanState {
     pub swapchain: Arc<Swapchain>,
     pub swapchain_images: Vec<Arc<SwapchainImage>>,
     pub viewport: Viewport,
-    pub attachment_images: AttachmentImageMap,
+    pub attachment_images: Arc<AttachmentImageMap>,
     pub memory_allocator: Arc<GenericMemoryAllocator<Arc<FreeListAllocator>>>,
+    pub render_passes: Arc<RenderPasses>,
+    pub pipelines: Arc<Pipelines>,
+    pub frame_buffers: Arc<FrameBufferMap>,
+    pub uniform_buffer: Arc<CpuBufferPool<Data>>,
 }
 
 pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
@@ -103,14 +114,14 @@ pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
     // )
     // .unwrap();
 
-    let _uniform_buffer = CpuBufferPool::<flat::vs::ty::Data>::new(
+    let uniform_buffer = Arc::new(CpuBufferPool::<flat::vs::ty::Data>::new(
         memory_allocator.clone(),
         BufferUsage {
             uniform_buffer: true,
             ..BufferUsage::empty()
         },
         MemoryUsage::Upload,
-    );
+    ));
 
     let shaders = load_shaders(device.clone());
     // let render_pass = solid_draw_pass(device.clone(), swapchain.image_format()).unwrap();
@@ -123,13 +134,19 @@ pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
         depth_range: 0.0..1.0,
     };
 
+    let render_passes = load_render_passes(device.clone(), swapchain.image_format());
+    let pipelines = load_pipelines(render_passes.clone(), device.clone(), shaders.clone());
+
     let dimensions = swapchain_images[0].dimensions().width_height();
     viewport.dimensions = [dimensions[0] as f32, dimensions[1] as f32];
+
     let attachment_images = create_attachment_images(
         memory_allocator.clone(),
         dimensions,
         swapchain.image_format(),
     );
+
+    let frame_buffers = create_frame_buffers(render_passes.clone(), attachment_images.clone());
 
     let descriptor_set_allocator = StandardDescriptorSetAllocator::new(device.clone());
 
@@ -137,6 +154,19 @@ pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
         StandardCommandBufferAllocator::new(device.clone(), Default::default());
 
     let previous_frame_end = Some(sync::now(device.clone()).boxed());
+
+    // let vertices: Vec<Vertex> = vec![];
+
+    // let mut vertex_buffer = CpuAccessibleBuffer::from_iter(
+    //     &memory_allocator,
+    //     BufferUsage {
+    //         vertex_buffer: true,
+    //         ..BufferUsage::empty()
+    //     },
+    //     false,
+    //     vertices,
+    // )
+    // .unwrap();
 
     (
         VulkanState {
@@ -154,7 +184,11 @@ pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
             viewport,
             swapchain_images,
             attachment_images,
+            frame_buffers,
             memory_allocator,
+            render_passes,
+            pipelines,
+            uniform_buffer,
         },
         event_loop,
     )

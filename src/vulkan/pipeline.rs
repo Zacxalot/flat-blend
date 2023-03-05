@@ -1,8 +1,14 @@
+use std::sync::Arc;
+
+use enum_map::{enum_map, Enum, EnumMap};
 use vulkano::{
     command_buffer::{
         AutoCommandBufferBuilder, CommandBufferExecFuture, CommandBufferUsage, CopyImageInfo,
     },
+    device::Device,
     image::ImageAccess,
+    pipeline::GraphicsPipeline,
+    render_pass::RenderPass,
     swapchain::{
         acquire_next_image, AcquireError, PresentFuture, SwapchainAcquireFuture,
         SwapchainCreateInfo, SwapchainCreationError, SwapchainPresentInfo,
@@ -11,11 +17,16 @@ use vulkano::{
 };
 use winit::window::Window;
 
-use crate::vulkan::{attachment_images::create_attachment_images};
+use crate::vulkan::{
+    attachment_images::create_attachment_images, render_passes::solid::solid_draw_pipeline,
+};
 
 use super::{
-    attachment_images::{AttachmentImages},
+    attachment_images::AttachmentImageKeys,
     init::VulkanState,
+    render_passes::render_pass_loader::{RenderPassKeys, RenderPasses},
+    shaders::shader_loader::LoadedShaders,
+    view::get_ortho,
 };
 
 type RenderFrameFutureFence = Option<
@@ -73,12 +84,12 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
         state.recreate_swapchain = false;
     }
 
-    // let _uniform_buffer_subbuffer = {
-    //     let _uniform_data = crate::vulkan::shaders::flat::vs::ty::Data {
+    // let uniform_buffer_subbuffer = {
+    //     let uniform_data = crate::vulkan::shaders::flat::vs::ty::Data {
     //         view: get_ortho(state.swapchain.clone()).into(),
     //     };
 
-    //     // uniform_buffer.from_data(uniform_data).unwrap()
+    //     state.uniform_buffer.from_data(uniform_data).unwrap()
     // };
 
     // let layout = pipeline.layout().set_layouts().get(0).unwrap();
@@ -110,30 +121,13 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
     )
     .unwrap();
 
+    // Finish by copying the image to the swapchain image
     builder
         .copy_image(CopyImageInfo::images(
-            state.attachment_images[AttachmentImages::FinalOutput].clone(),
+            state.attachment_images[AttachmentImageKeys::FinalOutput].clone(),
             state.swapchain_images[image_index as usize].clone(),
         ))
         .unwrap();
-
-    // println!(
-    //     "{:?}",
-    //     state.swapchain_images[image_index as usize].format()
-    // );
-
-    // println!(
-    //     "{:?}",
-    //     state.attachment_images[AttachmentImages::FinalOutput].usage()
-    // );
-
-    // builder
-    //     .copy_image(CopyImageInfo::images(
-    //         // state.attachment_images[AttachmentImages::FinalOutput].clone(),
-    //         state.swapchain_images[image_index as usize].clone(),
-    //         state.swapchain_images[image_index as usize].clone(),
-    //     ))
-    //     .unwrap();
 
     // builder
     // .begin_render_pass(
@@ -174,4 +168,21 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
             )
             .then_signal_fence_and_flush(),
     )
+}
+
+#[derive(Enum)]
+pub enum PipelineKeys {
+    Solid,
+}
+
+pub type Pipelines = EnumMap<PipelineKeys, Arc<GraphicsPipeline>>;
+
+pub fn load_pipelines(
+    render_passes: Arc<RenderPasses>,
+    device: Arc<Device>,
+    shaders: Arc<LoadedShaders>,
+) -> Arc<Pipelines> {
+    Arc::new(enum_map! {
+        PipelineKeys::Solid => solid_draw_pipeline(render_passes.clone(), device.clone(), shaders.clone()).unwrap()
+    })
 }
