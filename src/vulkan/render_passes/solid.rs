@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use enum_map::EnumMap;
 use vulkano::{
     buffer::TypedBufferAccess,
     command_buffer::{
@@ -89,11 +88,12 @@ pub fn render_solid_draw_pass(
                 0,
                 set,
             )
-            .bind_vertex_buffers(0, vertex_buffer.clone())
+            .bind_vertex_buffers(0, vertex_buffer)
             .bind_index_buffer(index_buffer.clone())
             .draw_indexed(index_buffer.len() as u32, 1, 0, 0, 0)
             .unwrap()
-            .end_render_pass();
+            .end_render_pass()
+            .unwrap();
     }
 }
 

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use enum_map::{enum_map, EnumMap};
+use enum_map::{enum_map};
 use vulkano::{
-    buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
+    buffer::{BufferUsage, CpuBufferPool},
     command_buffer::allocator::StandardCommandBufferAllocator,
     descriptor_set::allocator::StandardDescriptorSetAllocator,
     device::{Device, Queue},
@@ -12,7 +12,6 @@ use vulkano::{
         FreeListAllocator, GenericMemoryAllocator, MemoryUsage, StandardMemoryAllocator,
     },
     pipeline::graphics::viewport::Viewport,
-    render_pass::RenderPass,
     swapchain::{Surface, Swapchain},
     sync::{self, GpuFuture},
     VulkanLibrary,
@@ -20,7 +19,7 @@ use vulkano::{
 use vulkano_win::VkSurfaceBuild;
 use winit::{event_loop::EventLoop, window::WindowBuilder};
 
-use crate::data::vertex::Vertex;
+
 
 use super::{
     attachment_images::{
@@ -29,7 +28,7 @@ use super::{
     buffers::{IndexBuffers, VertexBuffers},
     device::get_device,
     pipeline::{load_pipelines, Pipelines},
-    render_passes::render_pass_loader::{load_render_passes, RenderPassKeys, RenderPasses},
+    render_passes::render_pass_loader::{load_render_passes, RenderPasses},
     shaders::{
         flat::{self, vs::ty::Data},
         shader_loader::{load_shaders, LoadedShaders},

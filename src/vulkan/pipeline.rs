@@ -8,7 +8,6 @@ use vulkano::{
     device::Device,
     image::ImageAccess,
     pipeline::GraphicsPipeline,
-    render_pass::RenderPass,
     swapchain::{
         acquire_next_image, AcquireError, PresentFuture, SwapchainAcquireFuture,
         SwapchainCreateInfo, SwapchainCreationError, SwapchainPresentInfo,
@@ -24,9 +23,8 @@ use crate::vulkan::{
 use super::{
     attachment_images::AttachmentImageKeys,
     init::VulkanState,
-    render_passes::render_pass_loader::{RenderPassKeys, RenderPasses},
+    render_passes::render_pass_loader::{RenderPasses},
     shaders::shader_loader::LoadedShaders,
-    view::get_ortho,
 };
 
 type RenderFrameFutureFence = Option<
