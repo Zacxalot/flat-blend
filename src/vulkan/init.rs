@@ -1,13 +1,16 @@
 use std::sync::Arc;
 
-use enum_map::enum_map;
+use enum_map::{enum_map, EnumMap};
 use vulkano::{
     buffer::{BufferUsage, CpuBufferPool},
     command_buffer::allocator::StandardCommandBufferAllocator,
     descriptor_set::allocator::StandardDescriptorSetAllocator,
     device::{Device, Queue},
+    image::{attachment, AttachmentImage, ImageAccess, SwapchainImage},
     instance::{Instance, InstanceCreateInfo},
-    memory::allocator::{MemoryUsage, StandardMemoryAllocator},
+    memory::allocator::{
+        FreeListAllocator, GenericMemoryAllocator, MemoryUsage, StandardMemoryAllocator,
+    },
     pipeline::graphics::viewport::Viewport,
     swapchain::{Surface, Swapchain},
     sync::{self, GpuFuture},
@@ -17,6 +20,7 @@ use vulkano_win::VkSurfaceBuild;
 use winit::{event_loop::EventLoop, window::WindowBuilder};
 
 use super::{
+    attachment_images::{self, create_attachment_images, AttachmentImageMap},
     buffers::{IndexBuffers, VertexBuffers},
     device::get_device,
     shaders::{
@@ -30,7 +34,6 @@ use super::{
 pub struct VulkanState {
     pub device: Arc<Device>,
     pub surface: Arc<Surface>,
-    // pub framebuffers: Vec<Arc<Framebuffer>>,
     pub descriptor_set_allocator: StandardDescriptorSetAllocator,
     pub command_buffer_allocator: StandardCommandBufferAllocator,
     pub recreate_swapchain: bool,
@@ -40,7 +43,10 @@ pub struct VulkanState {
     pub index_buffers: IndexBuffers,
     pub shaders: Arc<LoadedShaders>,
     pub swapchain: Arc<Swapchain>,
+    pub swapchain_images: Vec<Arc<SwapchainImage>>,
     pub viewport: Viewport,
+    pub attachment_images: AttachmentImageMap,
+    pub memory_allocator: Arc<GenericMemoryAllocator<Arc<FreeListAllocator>>>,
 }
 
 pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
@@ -66,7 +72,7 @@ pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
 
     let queue = queues.next().unwrap();
 
-    let (swapchain, images) = create_swapchain(device.clone(), surface.clone());
+    let (swapchain, swapchain_images) = create_swapchain(device.clone(), surface.clone());
 
     let memory_allocator = Arc::new(StandardMemoryAllocator::new_default(device.clone()));
 
@@ -98,7 +104,7 @@ pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
     // .unwrap();
 
     let _uniform_buffer = CpuBufferPool::<flat::vs::ty::Data>::new(
-        memory_allocator,
+        memory_allocator.clone(),
         BufferUsage {
             uniform_buffer: true,
             ..BufferUsage::empty()
@@ -117,7 +123,13 @@ pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
         depth_range: 0.0..1.0,
     };
 
-    resize_viewport(&images, &mut viewport);
+    let dimensions = swapchain_images[0].dimensions().width_height();
+    viewport.dimensions = [dimensions[0] as f32, dimensions[1] as f32];
+    let attachment_images = create_attachment_images(
+        memory_allocator.clone(),
+        dimensions,
+        swapchain.image_format(),
+    );
 
     let descriptor_set_allocator = StandardDescriptorSetAllocator::new(device.clone());
 
@@ -140,6 +152,9 @@ pub fn vulkano_init() -> (VulkanState, EventLoop<()>) {
             shaders,
             swapchain,
             viewport,
+            swapchain_images,
+            attachment_images,
+            memory_allocator,
         },
         event_loop,
     )

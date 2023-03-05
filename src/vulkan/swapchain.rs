@@ -60,7 +60,7 @@ pub fn create_swapchain(
             image_extent: window.inner_size().into(),
 
             image_usage: ImageUsage {
-                color_attachment: true,
+                transfer_dst: true,
                 ..ImageUsage::empty()
             },
 

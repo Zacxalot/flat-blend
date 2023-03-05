@@ -1,5 +1,8 @@
 use vulkano::{
-    command_buffer::{AutoCommandBufferBuilder, CommandBufferExecFuture, CommandBufferUsage},
+    command_buffer::{
+        AutoCommandBufferBuilder, CommandBufferExecFuture, CommandBufferUsage, CopyImageInfo,
+    },
+    image::ImageAccess,
     swapchain::{
         acquire_next_image, AcquireError, PresentFuture, SwapchainAcquireFuture,
         SwapchainCreateInfo, SwapchainCreationError, SwapchainPresentInfo,
@@ -8,9 +11,12 @@ use vulkano::{
 };
 use winit::window::Window;
 
-use crate::vulkan::swapchain::resize_viewport;
+use crate::vulkan::{attachment_images::create_attachment_images, swapchain::resize_viewport};
 
-use super::init::VulkanState;
+use super::{
+    attachment_images::{self, AttachmentImages},
+    init::VulkanState,
+};
 
 type RenderFrameFutureFence = Option<
     Result<
@@ -53,7 +59,17 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
         };
 
         state.swapchain = new_swapchain;
-        resize_viewport(&new_images, &mut state.viewport);
+
+        // Resize Viewport and images
+        let dimensions = state.swapchain_images[0].dimensions().width_height();
+        state.viewport.dimensions = [dimensions[0] as f32, dimensions[1] as f32];
+        state.attachment_images = create_attachment_images(
+            state.memory_allocator.clone(),
+            dimensions,
+            state.swapchain.image_format(),
+        );
+
+        state.swapchain_images = new_images;
         state.recreate_swapchain = false;
     }
 
@@ -87,12 +103,37 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
         state.recreate_swapchain = true;
     }
 
-    let builder = AutoCommandBufferBuilder::primary(
+    let mut builder = AutoCommandBufferBuilder::primary(
         &state.command_buffer_allocator,
         state.queue.queue_family_index(),
         CommandBufferUsage::OneTimeSubmit,
     )
     .unwrap();
+
+    builder
+        .copy_image(CopyImageInfo::images(
+            state.attachment_images[AttachmentImages::FinalOutput].clone(),
+            state.swapchain_images[image_index as usize].clone(),
+        ))
+        .unwrap();
+
+    // println!(
+    //     "{:?}",
+    //     state.swapchain_images[image_index as usize].format()
+    // );
+
+    // println!(
+    //     "{:?}",
+    //     state.attachment_images[AttachmentImages::FinalOutput].usage()
+    // );
+
+    // builder
+    //     .copy_image(CopyImageInfo::images(
+    //         // state.attachment_images[AttachmentImages::FinalOutput].clone(),
+    //         state.swapchain_images[image_index as usize].clone(),
+    //         state.swapchain_images[image_index as usize].clone(),
+    //     ))
+    //     .unwrap();
 
     // builder
     // .begin_render_pass(

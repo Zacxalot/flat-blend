@@ -1,3 +1,4 @@
+pub mod attachment_images;
 pub mod buffers;
 pub mod device;
 pub mod init;
