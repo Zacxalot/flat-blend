@@ -17,13 +17,14 @@ use vulkano::{
 use winit::window::Window;
 
 use crate::vulkan::{
-    attachment_images::create_attachment_images, render_passes::solid::solid_draw_pipeline,
+    attachment_images::{create_attachment_images, create_frame_buffers},
+    render_passes::solid::solid_draw_pipeline,
 };
 
 use super::{
-    attachment_images::AttachmentImageKeys,
+    attachment_images::FrameBufferKeys,
     init::VulkanState,
-    render_passes::render_pass_loader::{RenderPasses},
+    render_passes::{render_pass_loader::RenderPasses, solid::render_solid_draw_pass},
     shaders::shader_loader::LoadedShaders,
 };
 
@@ -78,6 +79,9 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
             state.swapchain.image_format(),
         );
 
+        state.frame_buffers =
+            create_frame_buffers(state.render_passes.clone(), state.attachment_images.clone());
+
         state.swapchain_images = new_images;
         state.recreate_swapchain = false;
     }
@@ -119,10 +123,15 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
     )
     .unwrap();
 
+    render_solid_draw_pass(&mut builder, state);
+
     // Finish by copying the image to the swapchain image
     builder
         .copy_image(CopyImageInfo::images(
-            state.attachment_images[AttachmentImageKeys::FinalOutput].clone(),
+            state.frame_buffers[FrameBufferKeys::Solid]
+                .clone()
+                .attachments()[0]
+                .image(),
             state.swapchain_images[image_index as usize].clone(),
         ))
         .unwrap();

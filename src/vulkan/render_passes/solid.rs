@@ -72,7 +72,7 @@ pub fn render_solid_draw_pass(
         builder
             .begin_render_pass(
                 RenderPassBeginInfo {
-                    // clear_values: vec![Some([0.02, 0.02, 0.02, 1.0].into())],
+                    clear_values: vec![Some([0.02, 0.02, 0.02, 1.0].into())],
                     ..RenderPassBeginInfo::framebuffer(
                         state.frame_buffers[FrameBufferKeys::Solid].clone(),
                     )
@@ -80,7 +80,7 @@ pub fn render_solid_draw_pass(
                 SubpassContents::Inline,
             )
             .unwrap()
-            // .set_viewport(0, [viewport.clone()])
+            .set_viewport(0, [state.viewport.clone()])
             .bind_pipeline_graphics(state.pipelines[PipelineKeys::Solid].clone())
             .bind_descriptor_sets(
                 PipelineBindPoint::Graphics,
@@ -121,7 +121,7 @@ pub fn solid_draw_pass(
         device,
         attachments: {
             color: {
-                load: Load,
+                load: Clear,
                 store: Store,
                 format: format,
                 samples: 1,

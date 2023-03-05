@@ -3,11 +3,17 @@ mod data;
 mod shapes;
 mod vulkan;
 
+use data::mesh::bmesh::bm_triangulate;
+use shapes::square::create_square;
 use vulkan::{
+    buffers::{IndexBufferKey, VertexBufferKey},
     init::{vulkano_init, VulkanState},
     pipeline::render_frame,
 };
-use vulkano::sync::{self, FlushError, GpuFuture};
+use vulkano::{
+    buffer::{BufferUsage, CpuAccessibleBuffer},
+    sync::{self, FlushError, GpuFuture},
+};
 
 use winit::{
     event::{ElementState, Event, VirtualKeyCode, WindowEvent},
@@ -16,7 +22,36 @@ use winit::{
 };
 
 fn main() {
-    let (state, event_loop) = vulkano_init();
+    let (mut state, event_loop) = vulkano_init();
+
+    let mut square = create_square();
+    let (vertices, indices) = bm_triangulate(&mut square);
+
+    let vertex_buffer = CpuAccessibleBuffer::from_iter(
+        &state.memory_allocator,
+        BufferUsage {
+            vertex_buffer: true,
+            ..BufferUsage::empty()
+        },
+        false,
+        vertices,
+    )
+    .unwrap();
+
+    let index_buffer = CpuAccessibleBuffer::from_iter(
+        &state.memory_allocator,
+        BufferUsage {
+            index_buffer: true,
+            ..BufferUsage::empty()
+        },
+        false,
+        indices,
+    )
+    .unwrap();
+
+    state.vertex_buffers[VertexBufferKey::Flat] = Some(vertex_buffer);
+    state.index_buffers[IndexBufferKey::Flat] = Some(index_buffer);
+
     run_event_loop(state, event_loop);
 }
 
