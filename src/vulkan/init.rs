@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use enum_map::{enum_map};
+use enum_map::enum_map;
 use vulkano::{
     buffer::{BufferUsage, CpuBufferPool},
     command_buffer::allocator::StandardCommandBufferAllocator,
@@ -19,8 +19,6 @@ use vulkano::{
 use vulkano_win::VkSurfaceBuild;
 use winit::{event_loop::EventLoop, window::WindowBuilder};
 
-
-
 use super::{
     attachment_images::{
         create_attachment_images, create_frame_buffers, AttachmentImageMap, FrameBufferMap,
@@ -36,7 +34,6 @@ use super::{
     swapchain::create_swapchain,
 };
 
-#[allow(dead_code)]
 pub struct VulkanState {
     pub device: Arc<Device>,
     pub surface: Arc<Surface>,
