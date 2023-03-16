@@ -3,7 +3,7 @@ mod data;
 mod shapes;
 mod vulkan;
 
-use data::mesh::bmesh::bm_triangulate;
+use data::{mesh::bmesh::bm_triangulate, vertex::Vertex};
 use shapes::square::create_square;
 use vulkan::{
     buffers::{IndexBufferKey, VertexBufferKey},
@@ -49,8 +49,42 @@ fn main() {
     )
     .unwrap();
 
+    let grid_vertices: Vec<Vertex> = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+        },
+        Vertex {
+            position: [1.0, -1.0],
+        },
+        Vertex {
+            position: [-1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0, -1.0],
+        },
+        Vertex {
+            position: [-1.0, 1.0],
+        },
+        Vertex {
+            position: [1.0, 1.0],
+        },
+    ];
+
+    let grid_vertex_buffer = CpuAccessibleBuffer::from_iter(
+        &state.memory_allocator,
+        BufferUsage {
+            vertex_buffer: true,
+            ..BufferUsage::empty()
+        },
+        false,
+        grid_vertices,
+    )
+    .unwrap();
+
     state.vertex_buffers[VertexBufferKey::Flat] = Some(vertex_buffer);
     state.index_buffers[IndexBufferKey::Flat] = Some(index_buffer);
+
+    state.vertex_buffers[VertexBufferKey::Grid] = Some(grid_vertex_buffer);
 
     run_event_loop(state, event_loop);
 }

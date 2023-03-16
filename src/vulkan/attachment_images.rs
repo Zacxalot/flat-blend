@@ -8,7 +8,7 @@ use vulkano::{
     render_pass::Framebuffer,
 };
 
-use crate::vulkan::render_passes::solid;
+use crate::vulkan::render_passes::{grid, solid};
 
 use super::render_passes::render_pass_loader::RenderPasses;
 
@@ -23,6 +23,7 @@ pub enum AttachmentImageKeys {
 #[derive(Enum)]
 pub enum FrameBufferKeys {
     Solid,
+    Grid,
 }
 
 pub fn create_attachment_images(
@@ -40,6 +41,7 @@ pub fn create_frame_buffers(
     attachment_images: Arc<AttachmentImageMap>,
 ) -> Arc<FrameBufferMap> {
     Arc::new(enum_map! {
-        FrameBufferKeys::Solid => {solid::create_framebuffer(render_passes.clone(), attachment_images.clone())}
+        FrameBufferKeys::Solid => {solid::create_framebuffer(render_passes.clone(), attachment_images.clone())},
+        FrameBufferKeys::Grid => {grid::create_framebuffer(render_passes.clone(), attachment_images.clone())}
     })
 }

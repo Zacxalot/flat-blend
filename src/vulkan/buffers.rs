@@ -9,6 +9,7 @@ use crate::data::vertex::Vertex;
 pub enum VertexBufferKey {
     WireframeEdges,
     Flat,
+    Grid,
 }
 
 #[derive(Enum)]

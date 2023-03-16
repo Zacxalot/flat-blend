@@ -28,7 +28,7 @@ use crate::{
     data::vertex::Vertex,
     vulkan::{
         attachment_images::{AttachmentImageKeys, AttachmentImageMap, FrameBufferKeys},
-        buffers::{IndexBufferKey, VertexBufferKey},
+        buffers::VertexBufferKey,
         init::VulkanState,
         pipeline::PipelineKeys,
         shaders::{
@@ -41,56 +41,26 @@ use crate::{
 
 use super::render_pass_loader::{RenderPassKeys, RenderPasses};
 
-pub fn render_solid_draw_pass(
+pub fn render_grid_draw_pass(
     builder: &mut AutoCommandBufferBuilder<PrimaryAutoCommandBuffer>,
     state: &VulkanState,
 ) {
-    if let (Some(vertex_buffer), Some(index_buffer)) = (
-        state.vertex_buffers[VertexBufferKey::Flat].clone(),
-        state.index_buffers[IndexBufferKey::Flat].clone(),
-    ) {
-        let uniform_buffer_subbuffer = {
-            let uniform_data = flat::vs::ty::Data {
-                view: get_ortho(state.swapchain.clone()).into(),
-            };
-
-            state.uniform_buffer.from_data(uniform_data).unwrap()
-        };
-
-        let set = PersistentDescriptorSet::new(
-            &state.descriptor_set_allocator,
-            state.pipelines[PipelineKeys::Solid]
-                .layout()
-                .set_layouts()
-                .get(0)
-                .unwrap()
-                .clone(),
-            [WriteDescriptorSet::buffer(0, uniform_buffer_subbuffer)],
-        )
-        .unwrap();
-
+    if let Some(vertex_buffer) = state.vertex_buffers[VertexBufferKey::Grid].clone() {
         builder
             .begin_render_pass(
                 RenderPassBeginInfo {
-                    clear_values: vec![None],
+                    clear_values: vec![Some([0.02, 0.02, 0.02, 1.0].into())],
                     ..RenderPassBeginInfo::framebuffer(
-                        state.frame_buffers[FrameBufferKeys::Solid].clone(),
+                        state.frame_buffers[FrameBufferKeys::Grid].clone(),
                     )
                 },
                 SubpassContents::Inline,
             )
             .unwrap()
             .set_viewport(0, [state.viewport.clone()])
-            .bind_pipeline_graphics(state.pipelines[PipelineKeys::Solid].clone())
-            .bind_descriptor_sets(
-                PipelineBindPoint::Graphics,
-                state.pipelines[PipelineKeys::Solid].layout().clone(),
-                0,
-                set,
-            )
-            .bind_vertex_buffers(0, vertex_buffer)
-            .bind_index_buffer(index_buffer.clone())
-            .draw_indexed(index_buffer.len() as u32, 1, 0, 0, 0)
+            .bind_pipeline_graphics(state.pipelines[PipelineKeys::Grid].clone())
+            .bind_vertex_buffers(0, vertex_buffer.clone())
+            .draw(vertex_buffer.len() as u32, 1, 0, 0)
             .unwrap()
             .end_render_pass()
             .unwrap();
@@ -104,7 +74,7 @@ pub fn create_framebuffer(
     let view = ImageView::new_default(attachment_images[AttachmentImageKeys::FinalOutput].clone())
         .unwrap();
     Framebuffer::new(
-        render_passes[RenderPassKeys::Solid].clone(),
+        render_passes[RenderPassKeys::Grid].clone(),
         FramebufferCreateInfo {
             attachments: vec![view],
             ..Default::default()
@@ -113,7 +83,7 @@ pub fn create_framebuffer(
     .unwrap()
 }
 
-pub fn solid_draw_pass(
+pub fn grid_draw_pass(
     device: Arc<Device>,
     format: Format,
 ) -> Result<Arc<RenderPass>, RenderPassCreationError> {
@@ -121,7 +91,7 @@ pub fn solid_draw_pass(
         device,
         attachments: {
             color: {
-                load: Load,
+                load: Clear,
                 store: Store,
                 format: format,
                 samples: 1,
@@ -134,7 +104,7 @@ pub fn solid_draw_pass(
     )
 }
 
-pub fn solid_draw_pipeline(
+pub fn grid_draw_pipeline(
     render_passes: Arc<RenderPasses>,
     device: Arc<Device>,
     shaders: Arc<LoadedShaders>,
@@ -145,16 +115,16 @@ pub fn solid_draw_pipeline(
     };
 
     GraphicsPipeline::start()
-        .render_pass(Subpass::from(render_passes[RenderPassKeys::Solid].clone(), 0).unwrap())
+        .render_pass(Subpass::from(render_passes[RenderPassKeys::Grid].clone(), 0).unwrap())
         .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
         .input_assembly_state(
             InputAssemblyState::new().topology(
                 vulkano::pipeline::graphics::input_assembly::PrimitiveTopology::TriangleList,
             ),
         )
-        .vertex_shader(shaders[ShaderKey::FlatVs].entry_point("main").unwrap(), ())
+        .vertex_shader(shaders[ShaderKey::GridVs].entry_point("main").unwrap(), ())
         .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
         .rasterization_state(rasterization_state)
-        .fragment_shader(shaders[ShaderKey::FlatFs].entry_point("main").unwrap(), ())
+        .fragment_shader(shaders[ShaderKey::GridFs].entry_point("main").unwrap(), ())
         .build(device)
 }

@@ -18,13 +18,16 @@ use winit::window::Window;
 
 use crate::vulkan::{
     attachment_images::{create_attachment_images, create_frame_buffers},
-    render_passes::solid::solid_draw_pipeline,
+    render_passes::{grid::grid_draw_pipeline, solid::solid_draw_pipeline},
 };
 
 use super::{
     attachment_images::FrameBufferKeys,
     init::VulkanState,
-    render_passes::{render_pass_loader::RenderPasses, solid::render_solid_draw_pass},
+    render_passes::{
+        grid::render_grid_draw_pass, render_pass_loader::RenderPasses,
+        solid::render_solid_draw_pass,
+    },
     shaders::shader_loader::LoadedShaders,
 };
 
@@ -123,6 +126,7 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
     )
     .unwrap();
 
+    render_grid_draw_pass(&mut builder, state);
     render_solid_draw_pass(&mut builder, state);
 
     // Finish by copying the image to the swapchain image
@@ -180,6 +184,7 @@ pub fn render_frame(state: &mut VulkanState) -> RenderFrameFutureFence {
 #[derive(Enum)]
 pub enum PipelineKeys {
     Solid,
+    Grid,
 }
 
 pub type Pipelines = EnumMap<PipelineKeys, Arc<GraphicsPipeline>>;
@@ -190,6 +195,7 @@ pub fn load_pipelines(
     shaders: Arc<LoadedShaders>,
 ) -> Arc<Pipelines> {
     Arc::new(enum_map! {
-        PipelineKeys::Solid => solid_draw_pipeline(render_passes.clone(), device.clone(), shaders.clone()).unwrap()
+        PipelineKeys::Solid => solid_draw_pipeline(render_passes.clone(), device.clone(), shaders.clone()).unwrap(),
+        PipelineKeys::Grid => grid_draw_pipeline(render_passes.clone(), device.clone(), shaders.clone()).unwrap()
     })
 }
