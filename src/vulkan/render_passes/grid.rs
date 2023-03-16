@@ -5,7 +5,6 @@ use vulkano::{
     command_buffer::{
         AutoCommandBufferBuilder, PrimaryAutoCommandBuffer, RenderPassBeginInfo, SubpassContents,
     },
-    descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet},
     device::Device,
     format::Format,
     image::view::ImageView,
@@ -17,7 +16,7 @@ use vulkano::{
             viewport::ViewportState,
             GraphicsPipelineCreationError,
         },
-        GraphicsPipeline, Pipeline, PipelineBindPoint, StateMode,
+        GraphicsPipeline, StateMode,
     },
     render_pass::{
         Framebuffer, FramebufferCreateInfo, RenderPass, RenderPassCreationError, Subpass,
@@ -32,10 +31,8 @@ use crate::{
         init::VulkanState,
         pipeline::PipelineKeys,
         shaders::{
-            flat,
             shader_loader::{LoadedShaders, ShaderKey},
         },
-        view::get_ortho,
     },
 };
 
