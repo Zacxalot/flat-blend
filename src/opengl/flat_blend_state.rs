@@ -1,16 +1,22 @@
 use miniquad::*;
 
-use super::pipelines::flat::FlatPipeline;
+use super::{pipelines::flat::FlatPipeline, structs::Object};
 
 pub struct FlatBlendState {
     flat_pipeline: FlatPipeline,
 }
 
 impl FlatBlendState {
-    pub fn new(ctx: &mut Context) -> FlatBlendState {
-        FlatBlendState {
-            flat_pipeline: FlatPipeline::new(ctx),
-        }
+    pub fn new(ctx: &mut Context, objects: Vec<Object>) -> FlatBlendState {
+        ctx.set_cull_face(CullFace::Nothing);
+
+        let mut flat_pipeline = FlatPipeline::new(ctx);
+
+        println!("Wow Pre Update");
+        flat_pipeline.update(ctx, &objects);
+        println!("Wow Post Update");
+
+        FlatBlendState { flat_pipeline }
     }
 }
 

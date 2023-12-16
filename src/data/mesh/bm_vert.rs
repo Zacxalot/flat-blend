@@ -1,4 +1,4 @@
-use crate::data::vertex::FBVertex;
+use crate::data::vertex::Vertex;
 
 use super::{
     bm_edge::{bm_edge_kill, BMEdge},
@@ -9,7 +9,7 @@ use super::{
 pub struct BMVert {
     slab_index: usize,
     pub edge: Option<*mut BMEdge>,
-    pub vertex: FBVertex,
+    pub vertex: Vertex,
 }
 
 impl From<(f32, f32)> for BMVert {
@@ -17,7 +17,7 @@ impl From<(f32, f32)> for BMVert {
         BMVert {
             slab_index: 0,
             edge: None,
-            vertex: FBVertex::from(input),
+            vertex: Vertex::from(input),
         }
     }
 }

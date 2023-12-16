@@ -1,24 +1,33 @@
-use bytemuck::{Pod, Zeroable};
 use lyon::geom::euclid::{Point2D, UnknownUnit};
-use vulkano::{buffer::BufferContents, pipeline::graphics::vertex_input::Vertex};
+
+pub type Index = u32;
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Default, Zeroable, Pod, Vertex, BufferContents)]
-pub struct FBVertex {
-    #[format(R32G32_SFLOAT)]
-    pub position: [f32; 2],
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Vec2 {
+    pub x: f32,
+    pub y: f32,
 }
 
-impl From<Point2D<f32, UnknownUnit>> for FBVertex {
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Vertex {
+    pub pos: Vec2,
+}
+
+impl From<Point2D<f32, UnknownUnit>> for Vertex {
     fn from(point: Point2D<f32, UnknownUnit>) -> Self {
-        FBVertex {
-            position: [point.x, point.y],
+        Vertex {
+            pos: Vec2 {
+                x: point.x,
+                y: point.y,
+            },
         }
     }
 }
 
-impl From<(f32, f32)> for FBVertex {
+impl From<(f32, f32)> for Vertex {
     fn from((x, y): (f32, f32)) -> Self {
-        FBVertex { position: [x, y] }
+        Vertex { pos: Vec2 { x, y } }
     }
 }
