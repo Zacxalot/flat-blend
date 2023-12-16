@@ -1,3 +1,6 @@
+use std::sync::{Arc, Mutex};
+
+use glam::Mat4;
 use miniquad::{
     Bindings, Buffer, BufferLayout, BufferType, Context, Pipeline, Shader, VertexAttribute,
     VertexFormat,
@@ -14,10 +17,11 @@ pub struct FlatPipeline {
     vertex_buffer: Buffer,
     index_buffer: Buffer,
     render_objects: Vec<RenderObject>,
+    projection_matrix: Arc<Mutex<Mat4>>,
 }
 
 impl FlatPipeline {
-    pub fn new(ctx: &mut Context) -> FlatPipeline {
+    pub fn new(ctx: &mut Context, projection_matrix: Arc<Mutex<Mat4>>) -> FlatPipeline {
         #[rustfmt::skip]
         let vertices: [Vertex; 0] = [];
         let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
@@ -47,6 +51,7 @@ impl FlatPipeline {
             index_buffer,
             vertex_buffer,
             render_objects,
+            projection_matrix,
         }
     }
 
@@ -65,9 +70,6 @@ impl FlatPipeline {
             indices.extend_from_slice(&object.indices);
         });
 
-        println!("Vertices: {:?}", vertices);
-        println!("Indices: {:?}", indices);
-
         self.vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
 
         self.index_buffer = Buffer::immutable(ctx, BufferType::IndexBuffer, &indices);
@@ -83,7 +85,12 @@ impl FlatPipeline {
     pub fn draw(&mut self, ctx: &mut Context) {
         ctx.apply_pipeline(&self.pipeline);
         ctx.apply_bindings(&self.bindings);
-        ctx.apply_uniforms(&shader::Uniforms { offset: (0.5, 0.5) });
+
+        let view_proj = *(self.projection_matrix.lock().unwrap());
+
+        ctx.apply_uniforms(&shader::Uniforms {
+            view_transform: view_proj,
+        });
 
         for render_object in &self.render_objects {
             ctx.draw(
@@ -102,11 +109,14 @@ mod shader {
     attribute vec2 pos;
 
     uniform vec2 offset;
+    uniform mat4 view_transform;
+
+    
 
     varying lowp vec2 texcoord;
 
     void main() {
-        gl_Position = vec4(pos + offset, 0, 1);
+        gl_Position = view_transform * vec4(pos, 0, 1);
     }"#;
 
     pub const FRAGMENT: &str = r#"#version 100
@@ -118,13 +128,13 @@ mod shader {
         ShaderMeta {
             images: vec![],
             uniforms: UniformBlockLayout {
-                uniforms: vec![UniformDesc::new("offset", UniformType::Float2)],
+                uniforms: vec![UniformDesc::new("view_transform", UniformType::Mat4)],
             },
         }
     }
 
     #[repr(C)]
     pub struct Uniforms {
-        pub offset: (f32, f32),
+        pub view_transform: glam::Mat4,
     }
 }
