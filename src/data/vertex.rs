@@ -1,13 +1,7 @@
+use glam::Vec2;
 use lyon::geom::euclid::{Point2D, UnknownUnit};
 
 pub type Index = u32;
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Vec2 {
-    pub x: f32,
-    pub y: f32,
-}
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]

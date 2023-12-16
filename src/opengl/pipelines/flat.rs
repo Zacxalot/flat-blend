@@ -116,7 +116,6 @@ mod shader {
     pub const VERTEX: &str = r#"#version 100
     attribute vec2 pos;
 
-    uniform vec2 offset;
     uniform mat4 view_matrix;
     uniform mat4 projection_matrix;
     

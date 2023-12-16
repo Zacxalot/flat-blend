@@ -8,10 +8,18 @@ use miniquad::*;
 
 use crate::opengl::matrices::get_view_matrix;
 
-use super::{matrices::get_ortho_matrix, pipelines::flat::FlatPipeline, structs::Object};
+use super::{
+    matrices::get_ortho_matrix,
+    pipelines::{
+        flat::FlatPipeline,
+        grid::{self, GridPipeline},
+    },
+    structs::Object,
+};
 
 pub struct FlatBlendState {
     flat_pipeline: FlatPipeline,
+    grid_pipeline: GridPipeline,
     projection_matrix: Arc<Mutex<Mat4>>,
     view_matrix: Arc<Mutex<Mat4>>,
     position: Vec2,
@@ -31,11 +39,13 @@ impl FlatBlendState {
 
         let mut flat_pipeline =
             FlatPipeline::new(ctx, projection_matrix.clone(), view_matrix.clone());
+        let grid_pipeline = GridPipeline::new(ctx);
 
         flat_pipeline.update(ctx, &objects);
 
         FlatBlendState {
             flat_pipeline,
+            grid_pipeline,
             projection_matrix,
             view_matrix,
             position,
@@ -93,6 +103,7 @@ impl EventHandler for FlatBlendState {
     fn draw(&mut self, ctx: &mut Context) {
         ctx.begin_default_pass(Default::default());
 
+        self.grid_pipeline.draw(ctx);
         self.flat_pipeline.draw(ctx);
 
         ctx.end_render_pass();
