@@ -1,6 +1,6 @@
 use slab::Slab;
 
-use crate::data::vertex::Vertex;
+use crate::data::vertex::FBVertex;
 
 use super::{
     bm_edge::BMEdge,
@@ -33,7 +33,7 @@ impl BMesh {
 }
 
 #[allow(dead_code)]
-pub fn bm_triangulate(bmesh: &mut BMesh) -> (Vec<Vertex>, Vec<u32>) {
+pub fn bm_triangulate(bmesh: &mut BMesh) -> (Vec<FBVertex>, Vec<u32>) {
     let mut all_bm_vertices: Vec<*mut BMVert> = vec![];
     let mut all_indices: Vec<u32> = vec![];
 
@@ -68,18 +68,18 @@ pub fn bm_triangulate(bmesh: &mut BMesh) -> (Vec<Vertex>, Vec<u32>) {
         let all_vertices = all_bm_vertices
             .iter()
             .map(|v| (*(*v)).vertex)
-            .collect::<Vec<Vertex>>();
+            .collect::<Vec<FBVertex>>();
         (all_vertices, all_indices)
     }
 }
 
-pub fn bm_edge_list(bmesh: &mut BMesh) -> Vec<Vertex> {
+pub fn bm_edge_list(bmesh: &mut BMesh) -> Vec<FBVertex> {
     unsafe {
         bmesh
             .edges
             .iter()
             .flat_map(|(_, edge)| [(*edge.v0).vertex, (*edge.v1).vertex])
-            .collect::<Vec<Vertex>>()
+            .collect::<Vec<FBVertex>>()
     }
 }
 
@@ -91,7 +91,7 @@ mod tests {
             bm_face::bm_face_create,
             bm_vert::{bm_vert_create, bm_vert_kill},
         },
-        vertex::Vertex,
+        vertex::FBVertex,
     };
 
     use super::BMesh;
@@ -102,9 +102,9 @@ mod tests {
 
         unsafe {
             let mut v0 = bm_vert_create(&mut bmesh);
-            (*v0).vertex = Vertex::from((-1.0, 0.0));
+            (*v0).vertex = FBVertex::from((-1.0, 0.0));
             let mut v1 = bm_vert_create(&mut bmesh);
-            (*v1).vertex = Vertex::from((1.0, 0.0));
+            (*v1).vertex = FBVertex::from((1.0, 0.0));
 
             let e0 = bm_edge_create(&mut bmesh, v0, v1);
 
@@ -128,11 +128,11 @@ mod tests {
 
         unsafe {
             let mut v0 = bm_vert_create(&mut bmesh);
-            (*v0).vertex = Vertex::from((-1.0, -1.0));
+            (*v0).vertex = FBVertex::from((-1.0, -1.0));
             let mut v1 = bm_vert_create(&mut bmesh);
-            (*v1).vertex = Vertex::from((1.0, -1.0));
+            (*v1).vertex = FBVertex::from((1.0, -1.0));
             let mut v2 = bm_vert_create(&mut bmesh);
-            (*v2).vertex = Vertex::from((1.0, 1.0));
+            (*v2).vertex = FBVertex::from((1.0, 1.0));
 
             let e0 = bm_edge_create(&mut bmesh, v0, v1);
             let e1 = bm_edge_create(&mut bmesh, v1, v2);
@@ -160,11 +160,11 @@ mod tests {
 
         unsafe {
             let mut v0 = bm_vert_create(&mut bmesh);
-            (*v0).vertex = Vertex::from((-1.0, -1.0));
+            (*v0).vertex = FBVertex::from((-1.0, -1.0));
             let mut v1 = bm_vert_create(&mut bmesh);
-            (*v1).vertex = Vertex::from((1.0, -1.0));
+            (*v1).vertex = FBVertex::from((1.0, -1.0));
             let mut v2 = bm_vert_create(&mut bmesh);
-            (*v2).vertex = Vertex::from((1.0, 1.0));
+            (*v2).vertex = FBVertex::from((1.0, 1.0));
 
             let e0 = bm_edge_create(&mut bmesh, v0, v1);
             let e1 = bm_edge_create(&mut bmesh, v1, v2);
@@ -199,13 +199,13 @@ mod tests {
 
         unsafe {
             let mut v0 = bm_vert_create(&mut bmesh);
-            (*v0).vertex = Vertex::from((-1.0, -1.0));
+            (*v0).vertex = FBVertex::from((-1.0, -1.0));
             let mut v1 = bm_vert_create(&mut bmesh);
-            (*v1).vertex = Vertex::from((1.0, -1.0));
+            (*v1).vertex = FBVertex::from((1.0, -1.0));
             let mut v2 = bm_vert_create(&mut bmesh);
-            (*v2).vertex = Vertex::from((1.0, 1.0));
+            (*v2).vertex = FBVertex::from((1.0, 1.0));
             let mut v3 = bm_vert_create(&mut bmesh);
-            (*v3).vertex = Vertex::from((1.0, 1.0));
+            (*v3).vertex = FBVertex::from((1.0, 1.0));
 
             let e0 = bm_edge_create(&mut bmesh, v0, v1);
             let e1 = bm_edge_create(&mut bmesh, v1, v2);
