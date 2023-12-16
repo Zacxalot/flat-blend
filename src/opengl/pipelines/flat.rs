@@ -18,10 +18,15 @@ pub struct FlatPipeline {
     index_buffer: Buffer,
     render_objects: Vec<RenderObject>,
     projection_matrix: Arc<Mutex<Mat4>>,
+    view_matrix: Arc<Mutex<Mat4>>,
 }
 
 impl FlatPipeline {
-    pub fn new(ctx: &mut Context, projection_matrix: Arc<Mutex<Mat4>>) -> FlatPipeline {
+    pub fn new(
+        ctx: &mut Context,
+        projection_matrix: Arc<Mutex<Mat4>>,
+        view_matrix: Arc<Mutex<Mat4>>,
+    ) -> FlatPipeline {
         #[rustfmt::skip]
         let vertices: [Vertex; 0] = [];
         let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
@@ -52,6 +57,7 @@ impl FlatPipeline {
             vertex_buffer,
             render_objects,
             projection_matrix,
+            view_matrix,
         }
     }
 
@@ -86,10 +92,12 @@ impl FlatPipeline {
         ctx.apply_pipeline(&self.pipeline);
         ctx.apply_bindings(&self.bindings);
 
-        let view_proj = *(self.projection_matrix.lock().unwrap());
+        let projection_matrix = *(self.projection_matrix.lock().unwrap());
+        let view_matrix = *(self.view_matrix.lock().unwrap());
 
         ctx.apply_uniforms(&shader::Uniforms {
-            view_transform: view_proj,
+            projection_matrix,
+            view_matrix,
         });
 
         for render_object in &self.render_objects {
@@ -109,14 +117,14 @@ mod shader {
     attribute vec2 pos;
 
     uniform vec2 offset;
-    uniform mat4 view_transform;
-
+    uniform mat4 view_matrix;
+    uniform mat4 projection_matrix;
     
 
     varying lowp vec2 texcoord;
 
     void main() {
-        gl_Position = view_transform * vec4(pos, 0, 1);
+        gl_Position = projection_matrix * view_matrix * vec4(pos, 0, 1);
     }"#;
 
     pub const FRAGMENT: &str = r#"#version 100
@@ -128,13 +136,17 @@ mod shader {
         ShaderMeta {
             images: vec![],
             uniforms: UniformBlockLayout {
-                uniforms: vec![UniformDesc::new("view_transform", UniformType::Mat4)],
+                uniforms: vec![
+                    UniformDesc::new("view_matrix", UniformType::Mat4),
+                    UniformDesc::new("projection_matrix", UniformType::Mat4),
+                ],
             },
         }
     }
 
     #[repr(C)]
     pub struct Uniforms {
-        pub view_transform: glam::Mat4,
+        pub projection_matrix: glam::Mat4,
+        pub view_matrix: glam::Mat4,
     }
 }
