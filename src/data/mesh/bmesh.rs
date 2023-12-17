@@ -1,6 +1,6 @@
 use slab::Slab;
 
-use crate::data::vertex::Vertex;
+use crate::data::vertex::{Index, Vertex};
 
 use super::{
     bm_edge::BMEdge,
@@ -33,9 +33,9 @@ impl BMesh {
 }
 
 #[allow(dead_code)]
-pub fn bm_triangulate(bmesh: &mut BMesh) -> (Vec<Vertex>, Vec<u32>) {
+pub fn bm_triangulate(bmesh: &mut BMesh) -> (Vec<Vertex>, Vec<Index>) {
     let mut all_bm_vertices: Vec<*mut BMVert> = vec![];
-    let mut all_indices: Vec<u32> = vec![];
+    let mut all_indices: Vec<Index> = vec![];
 
     for (_, face) in &bmesh.faces {
         unsafe {
@@ -45,7 +45,7 @@ pub fn bm_triangulate(bmesh: &mut BMesh) -> (Vec<Vertex>, Vec<u32>) {
 
             let flattened_verts = vertices
                 .iter()
-                .flat_map(|v| (**v).vertex.position)
+                .flat_map(|v| [(**v).vertex.pos.x, (**v).vertex.pos.y])
                 .collect::<Vec<f32>>();
 
             let indices = earcutr::earcut(&flattened_verts, &[], 2).unwrap();
@@ -58,7 +58,7 @@ pub fn bm_triangulate(bmesh: &mut BMesh) -> (Vec<Vertex>, Vec<u32>) {
                     all_indices.push(position as u32);
                 } else {
                     all_bm_vertices.push(vertices[index]);
-                    all_indices.push((all_bm_vertices.len() - 1) as u32);
+                    all_indices.push((all_bm_vertices.len() - 1) as Index);
                 }
             }
         }
