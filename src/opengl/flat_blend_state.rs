@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use egui_miniquad as egui_mq;
 use glam::{Mat4, Vec2};
 use miniquad::*;
 
@@ -22,6 +23,7 @@ pub struct FlatBlendState {
     position: Arc<Mutex<Vec2>>,
     mouse_state: HashMap<MouseButton, bool>,
     last_mouse_position: Vec2,
+    egui_mq: egui_mq::EguiMq,
 }
 
 impl FlatBlendState {
@@ -48,6 +50,7 @@ impl FlatBlendState {
             position,
             mouse_state: HashMap::new(),
             last_mouse_position: Vec2::new(0.0, 0.0),
+            egui_mq: egui_mq::EguiMq::new(ctx),
         }
     }
 
@@ -59,6 +62,8 @@ impl FlatBlendState {
 
 impl EventHandler for FlatBlendState {
     fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32) {
+        self.egui_mq.mouse_motion_event(x, y);
+
         let size = ctx.screen_size();
         let mouse_position = Vec2::new(x, y);
 
@@ -79,18 +84,32 @@ impl EventHandler for FlatBlendState {
         self.last_mouse_position = mouse_position;
     }
 
-    fn mouse_button_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        button: MouseButton,
-        _x: f32,
-        _y: f32,
-    ) {
+    fn mouse_wheel_event(&mut self, _: &mut Context, dx: f32, dy: f32) {
+        self.egui_mq.mouse_wheel_event(dx, dy);
+    }
+
+    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        self.egui_mq.mouse_button_down_event(ctx, button, x, y);
         self.mouse_state.insert(button, true);
     }
 
-    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
+    fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        self.egui_mq.mouse_button_up_event(ctx, button, x, y);
         self.mouse_state.insert(button, false);
+    }
+
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keycode: KeyCode,
+        keymods: KeyMods,
+        _repeat: bool,
+    ) {
+        self.egui_mq.key_down_event(ctx, keycode, keymods);
+    }
+
+    fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, keymods: KeyMods) {
+        self.egui_mq.key_up_event(keycode, keymods);
     }
 
     fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) {
@@ -107,6 +126,18 @@ impl EventHandler for FlatBlendState {
         self.flat_pipeline.draw(ctx);
 
         ctx.end_render_pass();
+
+        self.egui_mq.run(ctx, |_mq_ctx, egui_ctx| {
+            egui::Window::new("Color Test").show(egui_ctx, |ui| {
+                egui::ScrollArea::both()
+                    .auto_shrink([false; 2])
+                    .show(ui, |ui| {
+                        egui_demo_lib::ColorTest::default().ui(ui);
+                    });
+            });
+        });
+
+        self.egui_mq.draw(ctx);
 
         ctx.commit_frame();
     }
