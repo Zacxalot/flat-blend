@@ -10,10 +10,7 @@ use crate::opengl::matrices::get_view_matrix;
 
 use super::{
     matrices::get_ortho_matrix,
-    pipelines::{
-        flat::FlatPipeline,
-        grid::{self, GridPipeline},
-    },
+    pipelines::{flat::FlatPipeline, grid::GridPipeline},
     structs::Object,
 };
 

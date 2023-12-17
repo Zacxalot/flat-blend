@@ -53,8 +53,8 @@ impl GridPipeline {
         ctx.apply_bindings(&self.bindings);
         let position = *(self.position.lock().unwrap());
         ctx.apply_uniforms(&shader::Uniforms {
-            uResolution: ctx.screen_size().into(),
-            uPosition: position,
+            u_resolution: ctx.screen_size().into(),
+            u_position: position,
         });
 
         ctx.draw(0, 6, 1);
@@ -75,24 +75,24 @@ mod shader {
     #version 100
     precision mediump float;
 
-    uniform vec2 uResolution;
-    uniform vec2 uPosition;
+    uniform vec2 u_resolution;
+    uniform vec2 u_position;
 
     int squareSize = 160;
 
     float getGrid(vec2 uv, int size) {
-        vec2 grid = mod((uv - (uResolution / 2.0)) - 0.5,float(size));
+        vec2 grid = mod((uv - (u_resolution / 2.0)) - 0.5,float(size));
         return 1.0 - (clamp(min(grid.x, grid.y), 1.0, 2.0) - 1.0);
     }
 
     float getAxis(vec2 uv, int axis) {
-        float line = abs(((uv[axis] + 0.5) - (uResolution[axis]/2.0))/4.0);
+        float line = abs(((uv[axis] + 0.5) - (u_resolution[axis]/2.0))/4.0);
         return clamp(1.0 - line, 0.0, 1.0);
     }
 
     void main() {
         int smallSquareSize = squareSize / 2;
-        vec2 uv = gl_FragCoord.xy + uPosition.xy * -320.0;
+        vec2 uv = gl_FragCoord.xy + u_position.xy * -320.0;
 
         float big = getGrid(uv, squareSize);
         float small = getGrid(uv, smallSquareSize);
@@ -112,8 +112,8 @@ mod shader {
             images: vec![],
             uniforms: UniformBlockLayout {
                 uniforms: vec![
-                    UniformDesc::new("uResolution", UniformType::Float2),
-                    UniformDesc::new("uPosition", UniformType::Float2),
+                    UniformDesc::new("u_resolution", UniformType::Float2),
+                    UniformDesc::new("u_position", UniformType::Float2),
                 ],
             },
         }
@@ -121,7 +121,7 @@ mod shader {
 
     #[repr(C)]
     pub struct Uniforms {
-        pub uResolution: glam::Vec2,
-        pub uPosition: glam::Vec2,
+        pub u_resolution: glam::Vec2,
+        pub u_position: glam::Vec2,
     }
 }
