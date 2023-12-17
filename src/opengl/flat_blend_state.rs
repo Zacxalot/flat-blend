@@ -22,7 +22,7 @@ pub struct FlatBlendState {
     grid_pipeline: GridPipeline,
     projection_matrix: Arc<Mutex<Mat4>>,
     view_matrix: Arc<Mutex<Mat4>>,
-    position: Vec2,
+    position: Arc<Mutex<Vec2>>,
     mouse_state: HashMap<MouseButton, bool>,
     last_mouse_position: Vec2,
 }
@@ -32,14 +32,14 @@ impl FlatBlendState {
         ctx.set_cull_face(CullFace::Nothing);
 
         let (width, height) = ctx.screen_size();
-        let position = Vec2::new(0.0, 0.0);
+        let position = Arc::new(Mutex::new(Vec2::new(0.0, 0.0)));
 
         let projection_matrix = Arc::new(Mutex::new(get_ortho_matrix(width, height)));
-        let view_matrix = Arc::new(Mutex::new(get_view_matrix(position)));
+        let view_matrix = Arc::new(Mutex::new(get_view_matrix(*(position.lock().unwrap()))));
 
         let mut flat_pipeline =
             FlatPipeline::new(ctx, projection_matrix.clone(), view_matrix.clone());
-        let grid_pipeline = GridPipeline::new(ctx);
+        let grid_pipeline = GridPipeline::new(ctx, position.clone());
 
         flat_pipeline.update(ctx, &objects);
 
@@ -56,7 +56,7 @@ impl FlatBlendState {
 
     pub fn update_view_matrix(&mut self) {
         let mut view_matrix = self.view_matrix.lock().unwrap();
-        *view_matrix = get_view_matrix(self.position);
+        *view_matrix = get_view_matrix(*(self.position.lock().unwrap()));
     }
 }
 
@@ -69,8 +69,11 @@ impl EventHandler for FlatBlendState {
             if *middle_click {
                 let diff = mouse_position - self.last_mouse_position;
 
-                self.position.x += diff.x / (size.0 / 2.0);
-                self.position.y -= diff.y / (size.1 / 2.0);
+                {
+                    let mut position = self.position.lock().unwrap();
+                    position.x += diff.x / (size.0 / 2.0);
+                    position.y -= diff.y / (size.1 / 2.0);
+                }
 
                 self.update_view_matrix();
             }
