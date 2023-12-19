@@ -70,6 +70,7 @@ impl FlatPipeline {
             render_objects.push(RenderObject {
                 tris: object.indices.len() as Index / 3,
                 index_offset: indices.len() as Index,
+                translation: object.translation,
             });
 
             vertices.extend_from_slice(&object.vertices);
@@ -95,12 +96,13 @@ impl FlatPipeline {
         let projection_matrix = *(self.projection_matrix.lock().unwrap());
         let view_matrix = *(self.view_matrix.lock().unwrap());
 
-        ctx.apply_uniforms(&shader::Uniforms {
-            projection_matrix,
-            view_matrix,
-        });
-
         for render_object in &self.render_objects {
+            ctx.apply_uniforms(&shader::Uniforms {
+                projection_matrix,
+                view_matrix,
+                translation: render_object.translation,
+            });
+
             ctx.draw(
                 render_object.index_offset.try_into().unwrap(),
                 (render_object.tris * 3).try_into().unwrap(),
@@ -118,12 +120,12 @@ mod shader {
 
     uniform mat4 view_matrix;
     uniform mat4 projection_matrix;
-    
+    uniform vec2 translation;
 
     varying lowp vec2 texcoord;
 
     void main() {
-        gl_Position = projection_matrix * view_matrix * vec4(pos, 0, 1);
+        gl_Position = vec4(translation,0,0) + projection_matrix * view_matrix * vec4(pos, 0, 1);
     }"#;
 
     pub const FRAGMENT: &str = r#"#version 100
@@ -138,6 +140,7 @@ mod shader {
                 uniforms: vec![
                     UniformDesc::new("view_matrix", UniformType::Mat4),
                     UniformDesc::new("projection_matrix", UniformType::Mat4),
+                    UniformDesc::new("translation", UniformType::Float2),
                 ],
             },
         }
@@ -147,5 +150,6 @@ mod shader {
     pub struct Uniforms {
         pub projection_matrix: glam::Mat4,
         pub view_matrix: glam::Mat4,
+        pub translation: glam::Vec2,
     }
 }
