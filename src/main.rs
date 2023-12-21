@@ -5,7 +5,6 @@ mod opengl;
 mod shapes;
 mod ui;
 
-use data::mesh::bmesh::bm_triangulate;
 use glam::Vec2;
 use opengl::{
     flat_blend_state::FlatBlendState,

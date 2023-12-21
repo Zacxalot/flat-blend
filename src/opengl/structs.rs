@@ -1,7 +1,5 @@
 use std::{cell::RefCell, rc::Rc, task::Context};
 
-use glam::Vec2;
-
 use crate::data::{
     mesh::bmesh::{bm_triangulate, BMesh},
     vertex::{Index, Vertex},

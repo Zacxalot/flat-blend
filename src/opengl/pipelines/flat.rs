@@ -11,10 +11,7 @@ use miniquad::{
 };
 
 use crate::{
-    data::{
-        mesh,
-        vertex::{Index, Vertex},
-    },
+    data::vertex::{Index, Vertex},
     opengl::structs::{Mesh, Object},
 };
 
