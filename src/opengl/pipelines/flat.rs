@@ -1,4 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
 use glam::Mat4;
 use miniquad::{
@@ -7,8 +11,11 @@ use miniquad::{
 };
 
 use crate::{
-    data::vertex::{Index, Vertex},
-    opengl::structs::{Object, RenderObject},
+    data::{
+        mesh,
+        vertex::{Index, Vertex},
+    },
+    opengl::structs::{Mesh, Object},
 };
 
 pub struct FlatPipeline {
@@ -16,7 +23,7 @@ pub struct FlatPipeline {
     bindings: Bindings,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
-    render_objects: Vec<RenderObject>,
+    objects: Vec<Object>,
     projection_matrix: Arc<Mutex<Mat4>>,
     view_matrix: Arc<Mutex<Mat4>>,
 }
@@ -48,37 +55,34 @@ impl FlatPipeline {
             shader,
         );
 
-        let render_objects: Vec<RenderObject> = vec![];
-
         FlatPipeline {
             pipeline,
             bindings,
             index_buffer,
             vertex_buffer,
-            render_objects,
+            objects: vec![],
             projection_matrix,
             view_matrix,
         }
     }
 
-    pub fn update(&mut self, ctx: &mut Context, objects: &[Object]) {
+    pub fn update(
+        &mut self,
+        ctx: &mut Context,
+        objects: Vec<Object>,
+        meshes: Vec<Rc<RefCell<Mesh>>>,
+    ) {
         let mut vertices: Vec<Vertex> = vec![];
         let mut indices: Vec<Index> = vec![];
-        let mut render_objects: Vec<RenderObject> = vec![];
 
-        objects.iter().for_each(|object| {
-            render_objects.push(RenderObject {
-                tris: object.indices.len() as Index / 3,
-                index_offset: indices.len() as Index,
-                translation: object.translation,
-            });
+        meshes.iter().for_each(|mesh| {
+            let (mesh_vertices, mesh_indices) = mesh.borrow_mut().update(indices.len() as Index);
 
-            vertices.extend_from_slice(&object.vertices);
-            indices.extend_from_slice(&object.indices);
+            vertices.extend_from_slice(&mesh_vertices);
+            indices.extend_from_slice(&mesh_indices);
         });
 
         self.vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
-
         self.index_buffer = Buffer::immutable(ctx, BufferType::IndexBuffer, &indices);
 
         self.bindings = Bindings {
@@ -86,7 +90,8 @@ impl FlatPipeline {
             index_buffer: self.index_buffer,
             images: vec![],
         };
-        self.render_objects = render_objects;
+
+        self.objects = objects;
     }
 
     pub fn draw(&mut self, ctx: &mut Context) {
@@ -96,16 +101,16 @@ impl FlatPipeline {
         let projection_matrix = *(self.projection_matrix.lock().unwrap());
         let view_matrix = *(self.view_matrix.lock().unwrap());
 
-        for render_object in &self.render_objects {
+        for object in &self.objects {
             ctx.apply_uniforms(&shader::Uniforms {
                 projection_matrix,
                 view_matrix,
-                translation: render_object.translation,
+                translation: object.translation,
             });
 
             ctx.draw(
-                render_object.index_offset.try_into().unwrap(),
-                (render_object.tris * 3).try_into().unwrap(),
+                object.mesh.borrow().buffer_offset.try_into().unwrap(),
+                (object.mesh.borrow().tris * 3).try_into().unwrap(),
                 1,
             );
         }

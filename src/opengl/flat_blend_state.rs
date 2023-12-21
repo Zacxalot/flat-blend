@@ -1,5 +1,7 @@
 use std::{
+    cell::RefCell,
     collections::HashMap,
+    rc::Rc,
     sync::{Arc, Mutex},
 };
 
@@ -13,7 +15,7 @@ use crate::ui::objects::ObjectsUI;
 use super::{
     matrices::get_ortho_matrix,
     pipelines::{flat::FlatPipeline, grid::GridPipeline},
-    structs::Object,
+    structs::{Mesh, Object},
 };
 
 pub struct FlatBlendState {
@@ -29,7 +31,11 @@ pub struct FlatBlendState {
 }
 
 impl FlatBlendState {
-    pub fn new(ctx: &mut Context, objects: Vec<Object>) -> FlatBlendState {
+    pub fn new(
+        ctx: &mut Context,
+        objects: Vec<Object>,
+        meshes: Vec<Rc<RefCell<Mesh>>>,
+    ) -> FlatBlendState {
         ctx.set_cull_face(CullFace::Nothing);
         let zoom = 1.0;
 
@@ -46,7 +52,7 @@ impl FlatBlendState {
             FlatPipeline::new(ctx, projection_matrix.clone(), view_matrix.clone());
         let grid_pipeline = GridPipeline::new(ctx, position.clone());
 
-        flat_pipeline.update(ctx, &objects);
+        flat_pipeline.update(ctx, objects, meshes);
 
         FlatBlendState {
             flat_pipeline,

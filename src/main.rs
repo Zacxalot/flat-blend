@@ -7,28 +7,34 @@ mod ui;
 
 use data::mesh::bmesh::bm_triangulate;
 use glam::Vec2;
-use opengl::{flat_blend_state::FlatBlendState, structs::Object};
+use opengl::{
+    flat_blend_state::FlatBlendState,
+    structs::{Mesh, Object},
+};
 use shapes::square::create_square;
 
 fn main() {
-    let mut square = create_square();
-    let (vertices, indices) = bm_triangulate(&mut square);
-    let my_object = Object {
-        vertices,
-        indices,
-        ..Default::default()
-    };
+    let square = create_square();
 
-    let (vertices, indices) = bm_triangulate(&mut square);
-    let my_object2 = Object {
-        vertices,
-        indices,
-        translation: Vec2::new(2.0, 2.0),
-    };
+    let (mesh, _verts, _indices) = Mesh::new(square, 0);
 
-    miniquad::start(miniquad::conf::Conf::default(), |ctx| {
-        Box::new(FlatBlendState::new(ctx, vec![my_object, my_object2]))
-    });
+    let mut objects: Vec<Object> = vec![];
+
+    for y in 0..50 {
+        for x in 0..50 {
+            objects.push(Object {
+                mesh: mesh.clone(),
+                translation: Vec2::new(x as f32 * 2.5, y as f32 * 2.5),
+            });
+        }
+    }
+
+    println!("objects: {}", objects.len());
+
+    miniquad::start(
+        miniquad::conf::Conf::default(),
+        |ctx: &mut miniquad::Context| Box::new(FlatBlendState::new(ctx, objects, vec![mesh])),
+    );
 
     // run_event_loop(event_loop);
 }
