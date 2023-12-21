@@ -3,6 +3,7 @@ mod data;
 mod input;
 mod opengl;
 mod shapes;
+mod ui;
 
 use data::mesh::bmesh::bm_triangulate;
 use glam::Vec2;

@@ -8,6 +8,7 @@ use glam::{Mat4, Vec2};
 use miniquad::*;
 
 use crate::opengl::matrices::get_view_matrix;
+use crate::ui::objects::ObjectsUI;
 
 use super::{
     matrices::get_ortho_matrix,
@@ -127,15 +128,8 @@ impl EventHandler for FlatBlendState {
 
         ctx.end_render_pass();
 
-        self.egui_mq.run(ctx, |_mq_ctx, egui_ctx| {
-            egui::Window::new("Color Test").show(egui_ctx, |ui| {
-                egui::ScrollArea::both()
-                    .auto_shrink([false; 2])
-                    .show(ui, |ui| {
-                        egui_demo_lib::ColorTest::default().ui(ui);
-                    });
-            });
-        });
+        self.egui_mq
+            .run(ctx, |_mq_ctx, egui_ctx| ObjectsUI::ui(egui_ctx));
 
         self.egui_mq.draw(ctx);
 
