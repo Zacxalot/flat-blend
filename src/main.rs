@@ -23,7 +23,7 @@ fn main() {
     let my_object2 = Object {
         vertices,
         indices,
-        translation: Vec2::new(0.5, 0.5),
+        translation: Vec2::new(12.0, 12.0),
     };
 
     miniquad::start(miniquad::conf::Conf::default(), |ctx| {

@@ -125,7 +125,7 @@ mod shader {
     varying lowp vec2 texcoord;
 
     void main() {
-        gl_Position = vec4(translation,0,0) + projection_matrix * view_matrix * vec4(pos, 0, 1);
+        gl_Position = projection_matrix * view_matrix * vec4(pos + translation, 0, 1);
     }"#;
 
     pub const FRAGMENT: &str = r#"#version 100
