@@ -21,6 +21,7 @@ pub struct FlatBlendState {
     grid_pipeline: GridPipeline,
     projection_matrix: Arc<Mutex<Mat4>>,
     view_matrix: Arc<Mutex<Mat4>>,
+    zoom: f32,
     position: Arc<Mutex<Vec2>>,
     mouse_state: HashMap<MouseButton, bool>,
     last_mouse_position: Vec2,
@@ -30,12 +31,16 @@ pub struct FlatBlendState {
 impl FlatBlendState {
     pub fn new(ctx: &mut Context, objects: Vec<Object>) -> FlatBlendState {
         ctx.set_cull_face(CullFace::Nothing);
+        let zoom = 1.0;
 
         let (width, height) = ctx.screen_size();
         let position = Arc::new(Mutex::new(Vec2::new(0.0, 0.0)));
 
         let projection_matrix = Arc::new(Mutex::new(get_ortho_matrix(width, height)));
-        let view_matrix = Arc::new(Mutex::new(get_view_matrix(*(position.lock().unwrap()))));
+        let view_matrix = Arc::new(Mutex::new(get_view_matrix(
+            *(position.lock().unwrap()),
+            zoom,
+        )));
 
         let mut flat_pipeline =
             FlatPipeline::new(ctx, projection_matrix.clone(), view_matrix.clone());
@@ -52,12 +57,13 @@ impl FlatBlendState {
             mouse_state: HashMap::new(),
             last_mouse_position: Vec2::new(0.0, 0.0),
             egui_mq: egui_mq::EguiMq::new(ctx),
+            zoom,
         }
     }
 
     pub fn update_view_matrix(&mut self) {
         let mut view_matrix = self.view_matrix.lock().unwrap();
-        *view_matrix = get_view_matrix(*(self.position.lock().unwrap()));
+        *view_matrix = get_view_matrix(*(self.position.lock().unwrap()), self.zoom);
     }
 }
 
@@ -86,6 +92,11 @@ impl EventHandler for FlatBlendState {
     }
 
     fn mouse_wheel_event(&mut self, _: &mut Context, dx: f32, dy: f32) {
+        if dy != 0.0 {
+            self.zoom = (self.zoom + dy / 1000.0).max(0.1).min(20.0);
+            self.update_view_matrix();
+        }
+
         self.egui_mq.mouse_wheel_event(dx, dy);
     }
 
