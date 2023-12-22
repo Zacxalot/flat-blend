@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use glam::Mat4;
+use glam::{Mat4, Vec4};
 use miniquad::{
     Bindings, Buffer, BufferLayout, BufferType, Context, Pipeline, Shader, VertexAttribute,
     VertexFormat,
@@ -103,6 +103,7 @@ impl FlatPipeline {
                 projection_matrix,
                 view_matrix,
                 translation: object.translation,
+                colour: object.material.borrow().colour.into(),
             });
 
             ctx.draw(
@@ -117,22 +118,26 @@ impl FlatPipeline {
 mod shader {
     use miniquad::*;
 
+    use crate::opengl::structs::Colour;
+
     pub const VERTEX: &str = r#"#version 100
     attribute vec2 pos;
 
     uniform mat4 view_matrix;
     uniform mat4 projection_matrix;
     uniform vec2 translation;
-
+    
     varying lowp vec2 texcoord;
-
+    
     void main() {
         gl_Position = projection_matrix * view_matrix * vec4(pos + translation, 0, 1);
     }"#;
 
     pub const FRAGMENT: &str = r#"#version 100
+    uniform highp vec4 colour;
+
     void main() {
-        gl_FragColor = vec4(1, 0, 1, 1);
+        gl_FragColor = colour;
     }"#;
 
     pub fn meta() -> ShaderMeta {
@@ -143,6 +148,7 @@ mod shader {
                     UniformDesc::new("view_matrix", UniformType::Mat4),
                     UniformDesc::new("projection_matrix", UniformType::Mat4),
                     UniformDesc::new("translation", UniformType::Float2),
+                    UniformDesc::new("colour", UniformType::Float4),
                 ],
             },
         }
@@ -153,5 +159,6 @@ mod shader {
         pub projection_matrix: glam::Mat4,
         pub view_matrix: glam::Mat4,
         pub translation: glam::Vec2,
+        pub colour: [f32; 4],
     }
 }

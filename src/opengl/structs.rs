@@ -9,9 +9,16 @@ pub trait FlatBlendPipeline {
     fn draw(&mut self, ctx: &mut Context);
 }
 
+pub type Colour = glam::Vec4;
+
+pub struct Material {
+    pub colour: Colour,
+}
+
 pub struct Object {
     pub mesh: Rc<RefCell<Mesh>>,
     pub translation: glam::Vec2,
+    pub material: Rc<RefCell<Material>>,
 }
 
 pub struct Mesh {
