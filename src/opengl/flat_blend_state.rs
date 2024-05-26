@@ -28,12 +28,13 @@ pub struct FlatBlendState {
     mouse_state: HashMap<MouseButton, bool>,
     last_mouse_position: Vec2,
     egui_mq: egui_mq::EguiMq,
+    ui: ObjectsUI,
 }
 
 impl FlatBlendState {
     pub fn new(
         ctx: &mut Context,
-        objects: Vec<Object>,
+        objects: Arc<Vec<Object>>,
         meshes: Vec<Rc<RefCell<Mesh>>>,
     ) -> FlatBlendState {
         ctx.set_cull_face(CullFace::Nothing);
@@ -52,7 +53,7 @@ impl FlatBlendState {
             FlatPipeline::new(ctx, projection_matrix.clone(), view_matrix.clone());
         let grid_pipeline = GridPipeline::new(ctx, position.clone());
 
-        flat_pipeline.update(ctx, objects, meshes);
+        flat_pipeline.update(ctx, objects.clone(), meshes);
 
         FlatBlendState {
             flat_pipeline,
@@ -63,6 +64,7 @@ impl FlatBlendState {
             mouse_state: HashMap::new(),
             last_mouse_position: Vec2::new(0.0, 0.0),
             egui_mq: egui_mq::EguiMq::new(ctx),
+            ui: ObjectsUI::new(objects),
             zoom,
         }
     }
@@ -146,7 +148,7 @@ impl EventHandler for FlatBlendState {
         ctx.end_render_pass();
 
         self.egui_mq
-            .run(ctx, |_mq_ctx, egui_ctx| ObjectsUI::ui(egui_ctx));
+            .run(ctx, |_mq_ctx, egui_ctx| self.ui.draw(egui_ctx));
 
         self.egui_mq.draw(ctx);
 

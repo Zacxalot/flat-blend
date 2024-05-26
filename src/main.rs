@@ -5,7 +5,7 @@ mod opengl;
 mod shapes;
 mod ui;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use glam::Vec2;
 use opengl::{
@@ -30,6 +30,7 @@ fn main() {
     for y in 0..50 {
         for x in 0..50 {
             objects.push(Object {
+                name: format!("Square {} {}", x, y),
                 mesh: mesh.clone(),
                 translation: Vec2::new(x as f32 * 2.5, y as f32 * 2.5),
                 material: material.clone(),
@@ -41,7 +42,9 @@ fn main() {
 
     miniquad::start(
         miniquad::conf::Conf::default(),
-        |ctx: &mut miniquad::Context| Box::new(FlatBlendState::new(ctx, objects, vec![mesh])),
+        |ctx: &mut miniquad::Context| {
+            Box::new(FlatBlendState::new(ctx, Arc::new(objects), vec![mesh]))
+        },
     );
 
     // run_event_loop(event_loop);

@@ -20,7 +20,7 @@ pub struct FlatPipeline {
     bindings: Bindings,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
-    objects: Vec<Object>,
+    objects: Arc<Vec<Object>>,
     projection_matrix: Arc<Mutex<Mat4>>,
     view_matrix: Arc<Mutex<Mat4>>,
 }
@@ -57,7 +57,7 @@ impl FlatPipeline {
             bindings,
             index_buffer,
             vertex_buffer,
-            objects: vec![],
+            objects: Arc::new(vec![]),
             projection_matrix,
             view_matrix,
         }
@@ -66,7 +66,7 @@ impl FlatPipeline {
     pub fn update(
         &mut self,
         ctx: &mut Context,
-        objects: Vec<Object>,
+        objects: Arc<Vec<Object>>,
         meshes: Vec<Rc<RefCell<Mesh>>>,
     ) {
         let mut vertices: Vec<Vertex> = vec![];
@@ -98,7 +98,7 @@ impl FlatPipeline {
         let projection_matrix = *(self.projection_matrix.lock().unwrap());
         let view_matrix = *(self.view_matrix.lock().unwrap());
 
-        for object in &self.objects {
+        for object in &*self.objects {
             ctx.apply_uniforms(&shader::Uniforms {
                 projection_matrix,
                 view_matrix,

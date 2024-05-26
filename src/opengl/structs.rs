@@ -16,6 +16,7 @@ pub struct Material {
 }
 
 pub struct Object {
+    pub name: String,
     pub mesh: Rc<RefCell<Mesh>>,
     pub translation: glam::Vec2,
     pub material: Rc<RefCell<Material>>,
