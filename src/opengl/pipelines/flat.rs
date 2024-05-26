@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use glam::{Mat4, Vec4};
+use glam::Mat4;
 use miniquad::{
     Bindings, Buffer, BufferLayout, BufferType, Context, Pipeline, Shader, VertexAttribute,
     VertexFormat,
@@ -117,8 +117,6 @@ impl FlatPipeline {
 
 mod shader {
     use miniquad::*;
-
-    use crate::opengl::structs::Colour;
 
     pub const VERTEX: &str = r#"#version 100
     attribute vec2 pos;

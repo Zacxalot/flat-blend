@@ -10,13 +10,13 @@ pub fn create_square() -> BMesh {
     let mut bmesh = BMesh::new();
 
     unsafe {
-        let mut v0 = bm_vert_create(&mut bmesh);
+        let v0 = bm_vert_create(&mut bmesh);
         (*v0).vertex = Vertex::from((-1.0, -1.0));
-        let mut v1 = bm_vert_create(&mut bmesh);
+        let v1 = bm_vert_create(&mut bmesh);
         (*v1).vertex = Vertex::from((1.0, -1.0));
-        let mut v2 = bm_vert_create(&mut bmesh);
+        let v2 = bm_vert_create(&mut bmesh);
         (*v2).vertex = Vertex::from((1.0, 1.0));
-        let mut v3 = bm_vert_create(&mut bmesh);
+        let v3 = bm_vert_create(&mut bmesh);
         (*v3).vertex = Vertex::from((-1.0, 1.0));
 
         let e0 = bm_edge_create(&mut bmesh, v0, v1);
