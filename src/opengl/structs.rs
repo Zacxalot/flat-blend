@@ -18,6 +18,8 @@ pub struct Material {
 pub struct Object {
     pub mesh: Rc<RefCell<Mesh>>,
     pub translation: glam::Vec2,
+    pub rotation: f32,
+    pub scale: glam::Vec2,
     pub material: Rc<RefCell<Material>>,
 }
 

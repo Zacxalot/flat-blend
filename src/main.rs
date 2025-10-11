@@ -32,6 +32,8 @@ fn main() {
             objects.push(Object {
                 mesh: mesh.clone(),
                 translation: Vec2::new(x as f32 * 2.5, y as f32 * 2.5),
+                rotation: 0.0,
+                scale: Vec2::new(1.0, 1.0),
                 material: material.clone(),
             });
         }

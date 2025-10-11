@@ -99,10 +99,16 @@ impl FlatPipeline {
         let view_matrix = *(self.view_matrix.lock().unwrap());
 
         for object in &self.objects {
+            // Build model matrix: T * R * S
+            let translation_mat = Mat4::from_translation(object.translation.extend(0.0));
+            let rotation_mat = Mat4::from_rotation_z(object.rotation);
+            let scale_mat = Mat4::from_scale(object.scale.extend(1.0));
+            let model_matrix = translation_mat * rotation_mat * scale_mat;
+
             ctx.apply_uniforms(&shader::Uniforms {
-                projection_matrix,
+                model_matrix,
                 view_matrix,
-                translation: object.translation,
+                projection_matrix,
                 colour: object.material.borrow().colour.into(),
             });
 
@@ -121,14 +127,12 @@ mod shader {
     pub const VERTEX: &str = r#"#version 100
     attribute vec2 pos;
 
+    uniform mat4 model_matrix;
     uniform mat4 view_matrix;
     uniform mat4 projection_matrix;
-    uniform vec2 translation;
-    
-    varying lowp vec2 texcoord;
-    
+
     void main() {
-        gl_Position = projection_matrix * view_matrix * vec4(pos + translation, 0, 1);
+        gl_Position = projection_matrix * view_matrix * model_matrix * vec4(pos, 0, 1);
     }"#;
 
     pub const FRAGMENT: &str = r#"#version 100
@@ -143,9 +147,9 @@ mod shader {
             images: vec![],
             uniforms: UniformBlockLayout {
                 uniforms: vec![
+                    UniformDesc::new("model_matrix", UniformType::Mat4),
                     UniformDesc::new("view_matrix", UniformType::Mat4),
                     UniformDesc::new("projection_matrix", UniformType::Mat4),
-                    UniformDesc::new("translation", UniformType::Float2),
                     UniformDesc::new("colour", UniformType::Float4),
                 ],
             },
@@ -154,9 +158,9 @@ mod shader {
 
     #[repr(C)]
     pub struct Uniforms {
-        pub projection_matrix: glam::Mat4,
+        pub model_matrix: glam::Mat4,
         pub view_matrix: glam::Mat4,
-        pub translation: glam::Vec2,
+        pub projection_matrix: glam::Mat4,
         pub colour: [f32; 4],
     }
 }
