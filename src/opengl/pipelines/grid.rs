@@ -14,10 +14,11 @@ pub struct GridPipeline {
     vertex_buffer: Buffer,
     index_buffer: Buffer,
     position: Arc<Mutex<Vec2>>,
+    zoom: Arc<Mutex<f32>>,
 }
 
 impl GridPipeline {
-    pub fn new(ctx: &mut Context, position: Arc<Mutex<Vec2>>) -> GridPipeline {
+    pub fn new(ctx: &mut Context, position: Arc<Mutex<Vec2>>, zoom: Arc<Mutex<f32>>) -> GridPipeline {
         #[rustfmt::skip]
         let vertices: [Vertex; 4] = [Vertex{pos: Vec2::new(-1.0, -1.0)},Vertex{pos: Vec2::new(1.0, -1.0)},Vertex{pos: Vec2::new(-1.0, 1.0)},Vertex{pos: Vec2::new(1.0, 1.0)}];
         let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
@@ -45,6 +46,7 @@ impl GridPipeline {
             index_buffer,
             vertex_buffer,
             position,
+            zoom,
         }
     }
 
@@ -52,9 +54,11 @@ impl GridPipeline {
         ctx.apply_pipeline(&self.pipeline);
         ctx.apply_bindings(&self.bindings);
         let position = *(self.position.lock().unwrap());
+        let zoom = *(self.zoom.lock().unwrap());
         ctx.apply_uniforms(&shader::Uniforms {
             u_resolution: ctx.screen_size().into(),
             u_position: position,
+            u_zoom: zoom,
         });
 
         ctx.draw(0, 6, 1);
@@ -77,6 +81,7 @@ mod shader {
 
     uniform vec2 u_resolution;
     uniform vec2 u_position;
+    uniform float u_zoom;
 
     int squareSize = 160;
 
@@ -92,7 +97,7 @@ mod shader {
 
     void main() {
         int smallSquareSize = squareSize / 2;
-        vec2 uv = gl_FragCoord.xy + u_position.xy * -320.0;
+        vec2 uv = gl_FragCoord.xy - u_position.xy * (u_resolution / 2.0) * u_zoom;
 
         float big = getGrid(uv, squareSize);
         float small = getGrid(uv, smallSquareSize);
@@ -114,6 +119,7 @@ mod shader {
                 uniforms: vec![
                     UniformDesc::new("u_resolution", UniformType::Float2),
                     UniformDesc::new("u_position", UniformType::Float2),
+                    UniformDesc::new("u_zoom", UniformType::Float1),
                 ],
             },
         }
@@ -123,5 +129,6 @@ mod shader {
     pub struct Uniforms {
         pub u_resolution: glam::Vec2,
         pub u_position: glam::Vec2,
+        pub u_zoom: f32,
     }
 }
