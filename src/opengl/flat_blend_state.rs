@@ -11,6 +11,7 @@ use miniquad::*;
 
 use crate::opengl::matrices::get_view_matrix;
 use crate::ui::objects::ObjectsUI;
+use crate::ui::viewport::ViewportUI;
 
 use super::{
     matrices::get_ortho_matrix,
@@ -147,8 +148,13 @@ impl EventHandler for FlatBlendState {
 
         ctx.end_render_pass();
 
-        self.egui_mq
-            .run(ctx, |_mq_ctx, egui_ctx| ObjectsUI::ui(egui_ctx));
+        let position = *(self.position.lock().unwrap());
+        let zoom = *(self.zoom.lock().unwrap());
+
+        self.egui_mq.run(ctx, |_mq_ctx, egui_ctx| {
+            ObjectsUI::ui(egui_ctx);
+            ViewportUI::ui(egui_ctx, position, zoom);
+        });
 
         self.egui_mq.draw(ctx);
 
