@@ -94,6 +94,10 @@ impl FlatPipeline {
         self.objects = objects;
     }
 
+    pub fn objects_mut(&mut self) -> &mut Vec<Object> {
+        &mut self.objects
+    }
+
     pub fn draw(&mut self, ctx: &mut Context) {
         ctx.apply_pipeline(&self.pipeline);
         ctx.apply_bindings(&self.bindings);
@@ -125,6 +129,7 @@ impl FlatPipeline {
                 view_matrix,
                 projection_matrix,
                 colour: object.material.borrow().colour.into(),
+                selected: if object.selected { 1.0 } else { 0.0 },
             });
 
             ctx.draw(
@@ -152,9 +157,15 @@ mod shader {
 
     pub const FRAGMENT: &str = r#"#version 100
     uniform highp vec4 colour;
+    uniform lowp float selected;
 
     void main() {
-        gl_FragColor = colour;
+        if (selected > 0.5) {
+            // Brighten selected objects by mixing with white
+            gl_FragColor = mix(colour, vec4(1.0, 1.0, 1.0, 1.0), 0.4);
+        } else {
+            gl_FragColor = colour;
+        }
     }"#;
 
     pub fn meta() -> ShaderMeta {
@@ -166,6 +177,7 @@ mod shader {
                     UniformDesc::new("view_matrix", UniformType::Mat4),
                     UniformDesc::new("projection_matrix", UniformType::Mat4),
                     UniformDesc::new("colour", UniformType::Float4),
+                    UniformDesc::new("selected", UniformType::Float1),
                 ],
             },
         }
@@ -177,5 +189,6 @@ mod shader {
         pub view_matrix: glam::Mat4,
         pub projection_matrix: glam::Mat4,
         pub colour: [f32; 4],
+        pub selected: f32,
     }
 }

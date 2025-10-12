@@ -35,6 +35,7 @@ fn main() {
                 material: Rc::new(RefCell::new(Material {
                     colour: Colour::new(rng.random(), rng.random(), rng.random(), 1.0),
                 })),
+                selected: false,
             });
         }
     }

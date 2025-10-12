@@ -9,7 +9,7 @@ use egui_miniquad as egui_mq;
 use glam::{Mat4, Vec2};
 use miniquad::*;
 
-use crate::opengl::matrices::get_view_matrix;
+use crate::opengl::matrices::{get_view_matrix, screen_to_world};
 use crate::ui::objects::ObjectsUI;
 use crate::ui::viewport::ViewportUI;
 
@@ -75,6 +75,29 @@ impl FlatBlendState {
             *(self.zoom.lock().unwrap()),
         );
     }
+
+    /// Select object at the given world position
+    fn select_object_at(&mut self, world_pos: Vec2, add_to_selection: bool) {
+        let objects = self.flat_pipeline.objects_mut();
+
+        // If not adding to selection, clear previous selection
+        if !add_to_selection {
+            for obj in objects.iter_mut() {
+                obj.selected = false;
+            }
+        }
+
+        // Find and select the topmost object at this position
+        // Iterate in reverse to get the top-most object first
+        for obj in objects.iter_mut().rev() {
+            if obj.contains_point(world_pos) {
+                obj.selected = !obj.selected; // Toggle if adding to selection
+                if !add_to_selection {
+                    break; // Only select one if not multi-selecting
+                }
+            }
+        }
+    }
 }
 
 impl EventHandler for FlatBlendState {
@@ -113,6 +136,23 @@ impl EventHandler for FlatBlendState {
 
     fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         self.egui_mq.mouse_button_down_event(ctx, button, x, y);
+
+        // Handle left-click selection (only if egui doesn't want the input)
+        if button == MouseButton::Left && !self.egui_mq.egui_ctx().wants_pointer_input() {
+            let screen_size = ctx.screen_size();
+            let world_pos = screen_to_world(
+                Vec2::new(x, y),
+                screen_size,
+                *self.view_matrix.lock().unwrap(),
+                *self.projection_matrix.lock().unwrap(),
+            );
+
+            // Check if Shift is held for multi-selection
+            // Note: miniquad doesn't provide modifier state in mouse events,
+            // so we'll default to single selection for now
+            self.select_object_at(world_pos, false);
+        }
+
         self.mouse_state.insert(button, true);
     }
 

@@ -23,6 +23,7 @@ pub struct Object {
     pub rotation: f32,
     pub scale: glam::Vec2,
     pub material: Rc<RefCell<Material>>,
+    pub selected: bool,
 }
 
 impl Object {
@@ -32,6 +33,13 @@ impl Object {
         // For a square mesh, the extents are 2x2 (from -1 to 1)
         let mesh_extents = glam::Vec2::new(2.0, 2.0);
         AABB2D::from_transform(self.translation, self.rotation, self.scale, mesh_extents)
+    }
+
+    /// Check if a world-space point is inside this object's bounding box
+    pub fn contains_point(&self, point: glam::Vec2) -> bool {
+        let aabb = self.calculate_aabb();
+        point.x >= aabb.min.x && point.x <= aabb.max.x &&
+        point.y >= aabb.min.y && point.y <= aabb.max.y
     }
 }
 
