@@ -63,7 +63,7 @@ impl GridPipeline {
             u_resolution: ctx.screen_size().into(),
             u_position: position,
             u_zoom: zoom,
-            u_square_size: 160.0,
+            u_square_size: 100.0,
         });
 
         ctx.draw(0, 6, 1);
@@ -91,7 +91,7 @@ mod shader {
 
     float getGrid(vec2 uv, float size) {
         // Line thickness in screen pixels
-        float lineWidth = 1.0;
+        float lineWidth = 1.5;
         // Convert line width from screen space to world space
         float worldLineWidth = lineWidth / u_zoom;
 
@@ -102,7 +102,7 @@ mod shader {
 
     float getAxis(vec2 uv, int axis) {
         // Axis line thickness in screen pixels
-        float lineWidth = 4.0;
+        float lineWidth = 6.0;
         // Convert line width from screen space to world space
         float worldLineWidth = lineWidth / u_zoom;
 
@@ -111,8 +111,26 @@ mod shader {
     }
 
     void main() {
-        float squareSize = u_square_size;
+        // Calculate LOD level based on zoom
+        // When zoom is 1.0, we want base size
+        // When zoom is 0.5, squares appear half size -> need to double
+        // When zoom is 2.0, squares appear double size -> can halve
+        float baseSquareSize = u_square_size;
+
+        // Calculate screen-space size of a square
+        float screenSquareSize = baseSquareSize * u_zoom;
+
+        // Target screen size for squares (in pixels)
+        float targetScreenSize = 80.0;
+
+        // Calculate how many times we need to double/halve
+        float lodLevel = floor(log2(screenSquareSize / targetScreenSize));
+
+        // Apply LOD scaling
+        float lodScale = pow(2.0, -lodLevel);
+        float squareSize = baseSquareSize * lodScale;
         float smallSquareSize = squareSize / 2.0;
+
         // Convert screen space to world space centered at screen center
         vec2 screenCenter = u_resolution / 2.0;
         vec2 uv = (gl_FragCoord.xy - screenCenter - u_position.xy) / u_zoom;
