@@ -82,7 +82,8 @@ mod shader {
 
     pub const FRAGMENT: &str = r#"
     #version 100
-    precision mediump float;
+    #extension GL_OES_standard_derivatives : enable
+    precision highp float;
 
     uniform vec2 u_resolution;
     uniform vec2 u_position;
@@ -92,22 +93,33 @@ mod shader {
     float getGrid(vec2 uv, float size) {
         // Line thickness in screen pixels
         float lineWidth = 1.5;
-        // Convert line width from screen space to world space
-        float worldLineWidth = lineWidth / u_zoom;
 
-        vec2 grid = mod(uv - 0.5, size);
-        float dist = min(grid.x, grid.y);
-        return 1.0 - smoothstep(0.0, worldLineWidth, dist);
+        // Normalize coordinates immediately to avoid precision issues
+        // fract returns the fractional part, keeping values in [0, 1)
+        vec2 coord = fract(uv / size);
+
+        // Distance to nearest grid line (either at 0 or 1)
+        vec2 distToLine = min(coord, 1.0 - coord);
+        float dist = min(distToLine.x, distToLine.y);
+
+        // Use derivatives to get pixel-space distance
+        vec2 derivative = fwidth(coord);
+        float pixelDist = dist / max(derivative.x, derivative.y);
+
+        return 1.0 - smoothstep(0.0, lineWidth, pixelDist);
     }
 
     float getAxis(vec2 uv, int axis) {
         // Axis line thickness in screen pixels
         float lineWidth = 6.0;
-        // Convert line width from screen space to world space
-        float worldLineWidth = lineWidth / u_zoom;
 
         float dist = abs(uv[axis] + 0.5);
-        return 1.0 - smoothstep(0.0, worldLineWidth, dist);
+
+        // Use derivatives to get pixel-space distance
+        float derivative = axis == 0 ? fwidth(uv.x) : fwidth(uv.y);
+        float pixelDist = dist / derivative;
+
+        return 1.0 - smoothstep(0.0, lineWidth, pixelDist);
     }
 
     void main() {
