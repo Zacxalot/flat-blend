@@ -78,10 +78,9 @@ impl FlatBlendState {
 }
 
 impl EventHandler for FlatBlendState {
-    fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32) {
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32) {
         self.egui_mq.mouse_motion_event(x, y);
 
-        let size = ctx.screen_size();
         let mouse_position = Vec2::new(x, y);
 
         if let Some(middle_click) = self.mouse_state.get(&MouseButton::Middle) {

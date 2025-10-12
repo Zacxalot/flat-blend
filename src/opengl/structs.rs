@@ -5,6 +5,8 @@ use crate::data::{
     vertex::{Index, Vertex},
 };
 
+use super::frustum::AABB2D;
+
 pub trait FlatBlendPipeline {
     fn draw(&mut self, ctx: &mut Context);
 }
@@ -21,6 +23,16 @@ pub struct Object {
     pub rotation: f32,
     pub scale: glam::Vec2,
     pub material: Rc<RefCell<Material>>,
+}
+
+impl Object {
+    /// Calculate the axis-aligned bounding box for this object
+    /// Assumes the mesh is a square with extents from -1 to 1
+    pub fn calculate_aabb(&self) -> AABB2D {
+        // For a square mesh, the extents are 2x2 (from -1 to 1)
+        let mesh_extents = glam::Vec2::new(2.0, 2.0);
+        AABB2D::from_transform(self.translation, self.rotation, self.scale, mesh_extents)
+    }
 }
 
 pub struct Mesh {

@@ -12,7 +12,10 @@ use miniquad::{
 
 use crate::{
     data::vertex::{Index, Vertex},
-    opengl::structs::{Mesh, Object},
+    opengl::{
+        frustum::Frustum,
+        structs::{Mesh, Object},
+    },
 };
 
 pub struct FlatPipeline {
@@ -98,7 +101,19 @@ impl FlatPipeline {
         let projection_matrix = *(self.projection_matrix.lock().unwrap());
         let view_matrix = *(self.view_matrix.lock().unwrap());
 
+        // Calculate view-projection matrix and extract frustum
+        let vp_matrix = projection_matrix * view_matrix;
+        let frustum = Frustum::from_matrix(vp_matrix);
+
         for object in &self.objects {
+            // Calculate AABB for this object
+            let aabb = object.calculate_aabb();
+
+            // Perform frustum culling
+            if !frustum.intersects_aabb_2d(aabb.min, aabb.max) {
+                continue;
+            }
+
             // Build model matrix: T * R * S
             let translation_mat = Mat4::from_translation(object.translation.extend(0.0));
             let rotation_mat = Mat4::from_rotation_z(object.rotation);
