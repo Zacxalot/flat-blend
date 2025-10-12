@@ -12,6 +12,7 @@ use opengl::{
     flat_blend_state::FlatBlendState,
     structs::{Mesh, Object},
 };
+use rand::Rng;
 use shapes::square::create_square;
 
 use crate::opengl::structs::{Colour, Material};
@@ -21,20 +22,19 @@ fn main() {
 
     let (mesh, _verts, _indices) = Mesh::new(square, 0);
 
-    let material = Rc::new(RefCell::new(Material {
-        colour: Colour::new(1.0, 1.0, 0.0, 1.0),
-    }));
-
     let mut objects: Vec<Object> = vec![];
+    let mut rng = rand::rng();
 
-    for y in 0..50 {
-        for x in 0..50 {
+    for y in 0..500 {
+        for x in 0..500 {
             objects.push(Object {
                 mesh: mesh.clone(),
                 translation: Vec2::new(x as f32 * 250.0, y as f32 * 250.0),
                 rotation: 0.0,
                 scale: Vec2::new(100.0, 100.0),
-                material: material.clone(),
+                material: Rc::new(RefCell::new(Material {
+                    colour: Colour::new(rng.random(), rng.random(), rng.random(), 1.0),
+                })),
             });
         }
     }
