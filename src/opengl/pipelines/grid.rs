@@ -90,19 +90,21 @@ mod shader {
     uniform float u_square_size;
 
     float getGrid(vec2 uv, float size) {
-        vec2 grid = mod((uv - (u_resolution / 2.0)) - 0.5, size);
+        vec2 grid = mod(uv - 0.5, size);
         return 1.0 - (clamp(min(grid.x, grid.y), 1.0, 2.0) - 1.0);
     }
 
     float getAxis(vec2 uv, int axis) {
-        float line = abs(((uv[axis] + 0.5) - (u_resolution[axis]/2.0))/4.0);
+        float line = abs((uv[axis] + 0.5) / 4.0);
         return clamp(1.0 - line, 0.0, 1.0);
     }
 
     void main() {
-        float squareSize = u_square_size * u_zoom;
+        float squareSize = u_square_size;
         float smallSquareSize = squareSize / 2.0;
-        vec2 uv = gl_FragCoord.xy - u_position.xy * u_zoom;
+        // Convert screen space to world space centered at screen center
+        vec2 screenCenter = u_resolution / 2.0;
+        vec2 uv = (gl_FragCoord.xy - screenCenter - u_position.xy) / u_zoom;
 
         float big = getGrid(uv, squareSize);
         float small = getGrid(uv, smallSquareSize);
