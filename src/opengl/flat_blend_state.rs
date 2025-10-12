@@ -70,7 +70,10 @@ impl FlatBlendState {
 
     pub fn update_view_matrix(&mut self) {
         let mut view_matrix = self.view_matrix.lock().unwrap();
-        *view_matrix = get_view_matrix(*(self.position.lock().unwrap()), *(self.zoom.lock().unwrap()));
+        *view_matrix = get_view_matrix(
+            *(self.position.lock().unwrap()),
+            *(self.zoom.lock().unwrap()),
+        );
     }
 }
 
@@ -87,8 +90,8 @@ impl EventHandler for FlatBlendState {
 
                 {
                     let mut position = self.position.lock().unwrap();
-                    position.x += diff.x / (size.0 / 2.0);
-                    position.y -= diff.y / (size.1 / 2.0);
+                    position.x += diff.x;
+                    position.y -= diff.y;
                 }
 
                 self.update_view_matrix();

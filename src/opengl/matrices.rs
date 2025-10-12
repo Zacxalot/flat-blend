@@ -2,10 +2,10 @@ use glam::{Mat4, Vec2};
 
 pub fn get_ortho_matrix(width: f32, height: f32) -> Mat4 {
     Mat4::orthographic_rh_gl(
-        -width / 100.0,
-        width / 100.0,
-        -height / 100.0,
-        height / 100.0,
+        -width / 2.0,
+        width / 2.0,
+        -height / 2.0,
+        height / 2.0,
         -1.0,
         1.0,
     )

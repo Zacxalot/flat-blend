@@ -31,9 +31,9 @@ fn main() {
         for x in 0..50 {
             objects.push(Object {
                 mesh: mesh.clone(),
-                translation: Vec2::new(x as f32 * 2.5, y as f32 * 2.5),
+                translation: Vec2::new(x as f32 * 250.0, y as f32 * 250.0),
                 rotation: 0.0,
-                scale: Vec2::new(1.0, 1.0),
+                scale: Vec2::new(100.0, 100.0),
                 material: material.clone(),
             });
         }

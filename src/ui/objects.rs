@@ -8,10 +8,12 @@ impl ObjectsUI {
     }
 
     pub fn ui(egui_ctx: &Context) {
-        egui::Window::new("Objects").show(egui_ctx, |ui| {
-            egui::ScrollArea::both()
-                .auto_shrink([false; 2])
-                .show(ui, |ui| ui.label("Howdy"));
-        });
+        egui::Window::new("Objects")
+            .default_open(false)
+            .show(egui_ctx, |ui| {
+                egui::ScrollArea::both()
+                    .auto_shrink([false; 2])
+                    .show(ui, |ui| ui.label("Howdy"));
+            });
     }
 }
