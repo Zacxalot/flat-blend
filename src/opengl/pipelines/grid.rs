@@ -63,6 +63,7 @@ impl GridPipeline {
             u_resolution: ctx.screen_size().into(),
             u_position: position,
             u_zoom: zoom,
+            u_square_size: 160.0,
         });
 
         ctx.draw(0, 6, 1);
@@ -86,11 +87,10 @@ mod shader {
     uniform vec2 u_resolution;
     uniform vec2 u_position;
     uniform float u_zoom;
+    uniform float u_square_size;
 
-    int squareSize = 160;
-
-    float getGrid(vec2 uv, int size) {
-        vec2 grid = mod((uv - (u_resolution / 2.0)) - 0.5,float(size));
+    float getGrid(vec2 uv, float size) {
+        vec2 grid = mod((uv - (u_resolution / 2.0)) - 0.5, size);
         return 1.0 - (clamp(min(grid.x, grid.y), 1.0, 2.0) - 1.0);
     }
 
@@ -100,7 +100,8 @@ mod shader {
     }
 
     void main() {
-        int smallSquareSize = squareSize / 2;
+        float squareSize = u_square_size * u_zoom;
+        float smallSquareSize = squareSize / 2.0;
         vec2 uv = gl_FragCoord.xy - u_position.xy * u_zoom;
 
         float big = getGrid(uv, squareSize);
@@ -124,6 +125,7 @@ mod shader {
                     UniformDesc::new("u_resolution", UniformType::Float2),
                     UniformDesc::new("u_position", UniformType::Float2),
                     UniformDesc::new("u_zoom", UniformType::Float1),
+                    UniformDesc::new("u_square_size", UniformType::Float1),
                 ],
             },
         }
@@ -134,5 +136,6 @@ mod shader {
         pub u_resolution: glam::Vec2,
         pub u_position: glam::Vec2,
         pub u_zoom: f32,
+        pub u_square_size: f32,
     }
 }
