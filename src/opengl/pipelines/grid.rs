@@ -18,7 +18,11 @@ pub struct GridPipeline {
 }
 
 impl GridPipeline {
-    pub fn new(ctx: &mut Context, position: Arc<Mutex<Vec2>>, zoom: Arc<Mutex<f32>>) -> GridPipeline {
+    pub fn new(
+        ctx: &mut Context,
+        position: Arc<Mutex<Vec2>>,
+        zoom: Arc<Mutex<f32>>,
+    ) -> GridPipeline {
         #[rustfmt::skip]
         let vertices: [Vertex; 4] = [Vertex{pos: Vec2::new(-1.0, -1.0)},Vertex{pos: Vec2::new(1.0, -1.0)},Vertex{pos: Vec2::new(-1.0, 1.0)},Vertex{pos: Vec2::new(1.0, 1.0)}];
         let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
@@ -97,7 +101,7 @@ mod shader {
 
     void main() {
         int smallSquareSize = squareSize / 2;
-        vec2 uv = gl_FragCoord.xy - u_position.xy * (u_resolution / 2.0) * u_zoom;
+        vec2 uv = gl_FragCoord.xy - u_position.xy * u_zoom;
 
         float big = getGrid(uv, squareSize);
         float small = getGrid(uv, smallSquareSize);
