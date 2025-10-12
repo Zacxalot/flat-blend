@@ -90,13 +90,24 @@ mod shader {
     uniform float u_square_size;
 
     float getGrid(vec2 uv, float size) {
+        // Line thickness in screen pixels
+        float lineWidth = 1.0;
+        // Convert line width from screen space to world space
+        float worldLineWidth = lineWidth / u_zoom;
+
         vec2 grid = mod(uv - 0.5, size);
-        return 1.0 - (clamp(min(grid.x, grid.y), 1.0, 2.0) - 1.0);
+        float dist = min(grid.x, grid.y);
+        return 1.0 - smoothstep(0.0, worldLineWidth, dist);
     }
 
     float getAxis(vec2 uv, int axis) {
-        float line = abs((uv[axis] + 0.5) / 4.0);
-        return clamp(1.0 - line, 0.0, 1.0);
+        // Axis line thickness in screen pixels
+        float lineWidth = 4.0;
+        // Convert line width from screen space to world space
+        float worldLineWidth = lineWidth / u_zoom;
+
+        float dist = abs(uv[axis] + 0.5);
+        return 1.0 - smoothstep(0.0, worldLineWidth, dist);
     }
 
     void main() {
