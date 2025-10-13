@@ -24,6 +24,7 @@ pub struct Object {
     scale: glam::Vec2,
     material: Rc<RefCell<Material>>,
     model_matrix: glam::Mat4,
+    aabb: AABB2D,
     pub selected: bool,
 }
 
@@ -43,11 +44,19 @@ impl Object {
             material,
             selected: false,
             model_matrix: glam::Mat4::IDENTITY,
+            aabb: AABB2D::new(glam::Vec2::ZERO, glam::Vec2::ZERO),
         };
 
         obj.update_model_matrix();
+        obj.update_aabb();
 
         obj
+    }
+
+    fn update_aabb(&mut self) {
+        // For a square mesh, the extents are 2x2 (from -1 to 1)
+        let mesh_extents = glam::Vec2::new(2.0, 2.0);
+        self.aabb = AABB2D::from_transform(self.translation, self.rotation, self.scale, mesh_extents);
     }
 
     pub fn borrow_mesh(&self) -> std::cell::Ref<Mesh> {
@@ -69,21 +78,17 @@ impl Object {
         self.model_matrix
     }
 
-    /// Calculate the axis-aligned bounding box for this object
-    /// Assumes the mesh is a square with extents from -1 to 1
-    pub fn calculate_aabb(&self) -> AABB2D {
-        // For a square mesh, the extents are 2x2 (from -1 to 1)
-        let mesh_extents = glam::Vec2::new(2.0, 2.0);
-        AABB2D::from_transform(self.translation, self.rotation, self.scale, mesh_extents)
+    /// Get the cached axis-aligned bounding box for this object
+    pub fn get_aabb(&self) -> AABB2D {
+        self.aabb
     }
 
     /// Check if a world-space point is inside this object's bounding box
     pub fn contains_point(&self, point: glam::Vec2) -> bool {
-        let aabb = self.calculate_aabb();
-        point.x >= aabb.min.x
-            && point.x <= aabb.max.x
-            && point.y >= aabb.min.y
-            && point.y <= aabb.max.y
+        point.x >= self.aabb.min.x
+            && point.x <= self.aabb.max.x
+            && point.y >= self.aabb.min.y
+            && point.y <= self.aabb.max.y
     }
 }
 

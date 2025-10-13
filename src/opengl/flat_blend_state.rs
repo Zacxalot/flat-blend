@@ -15,13 +15,12 @@ use crate::ui::viewport::ViewportUI;
 
 use super::{
     matrices::get_ortho_matrix,
-    pipelines::{flat::FlatPipeline, grid::GridPipeline},
+    render_context::RenderContext,
     structs::{Mesh, Object},
 };
 
 pub struct FlatBlendState {
-    flat_pipeline: FlatPipeline,
-    grid_pipeline: GridPipeline,
+    render_context: RenderContext,
     projection_matrix: Arc<Mutex<Mat4>>,
     view_matrix: Arc<Mutex<Mat4>>,
     zoom: Arc<Mutex<f32>>,
@@ -49,15 +48,18 @@ impl FlatBlendState {
             *(zoom.lock().unwrap()),
         )));
 
-        let mut flat_pipeline =
-            FlatPipeline::new(ctx, projection_matrix.clone(), view_matrix.clone());
-        let grid_pipeline = GridPipeline::new(ctx, position.clone(), zoom.clone());
-
-        flat_pipeline.update(ctx, objects, meshes);
+        let render_context = RenderContext::new(
+            ctx,
+            projection_matrix.clone(),
+            view_matrix.clone(),
+            zoom.clone(),
+            position.clone(),
+            objects,
+            meshes,
+        );
 
         FlatBlendState {
-            flat_pipeline,
-            grid_pipeline,
+            render_context,
             projection_matrix,
             view_matrix,
             position,
@@ -74,11 +76,15 @@ impl FlatBlendState {
             *(self.position.lock().unwrap()),
             *(self.zoom.lock().unwrap()),
         );
+        drop(view_matrix);
+
+        // Update scene visibility when camera changes
+        self.render_context.update_visibility();
     }
 
     /// Select object at the given world position
     fn select_object_at(&mut self, world_pos: Vec2, add_to_selection: bool) {
-        let objects = self.flat_pipeline.objects_mut();
+        let objects = self.render_context.scene_data.objects_mut();
 
         // If not adding to selection, clear previous selection
         if !add_to_selection {
@@ -178,6 +184,10 @@ impl EventHandler for FlatBlendState {
     fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) {
         let mut projection_matrix = self.projection_matrix.lock().unwrap();
         *projection_matrix = get_ortho_matrix(width, height);
+        drop(projection_matrix);
+
+        // Update scene visibility when projection changes
+        self.render_context.update_visibility();
     }
 
     fn update(&mut self, _ctx: &mut Context) {}
@@ -185,8 +195,7 @@ impl EventHandler for FlatBlendState {
     fn draw(&mut self, ctx: &mut Context) {
         ctx.begin_default_pass(Default::default());
 
-        self.grid_pipeline.draw(ctx);
-        self.flat_pipeline.draw(ctx);
+        self.render_context.draw(ctx);
 
         ctx.end_render_pass();
 

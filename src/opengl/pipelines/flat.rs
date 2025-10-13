@@ -12,10 +12,7 @@ use miniquad::{
 
 use crate::{
     data::vertex::{Index, Vertex},
-    opengl::{
-        frustum::Frustum,
-        structs::{Mesh, Object},
-    },
+    opengl::{scene::SceneData, structs::Mesh},
 };
 
 pub struct FlatPipeline {
@@ -23,7 +20,6 @@ pub struct FlatPipeline {
     bindings: Bindings,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
-    objects: Vec<Object>,
     projection_matrix: Arc<Mutex<Mat4>>,
     view_matrix: Arc<Mutex<Mat4>>,
 }
@@ -60,18 +56,12 @@ impl FlatPipeline {
             bindings,
             index_buffer,
             vertex_buffer,
-            objects: vec![],
             projection_matrix,
             view_matrix,
         }
     }
 
-    pub fn update(
-        &mut self,
-        ctx: &mut Context,
-        objects: Vec<Object>,
-        meshes: Vec<Rc<RefCell<Mesh>>>,
-    ) {
+    pub fn update(&mut self, ctx: &mut Context, meshes: Vec<Rc<RefCell<Mesh>>>) {
         let mut vertices: Vec<Vertex> = vec![];
         let mut indices: Vec<Index> = vec![];
 
@@ -90,33 +80,24 @@ impl FlatPipeline {
             index_buffer: self.index_buffer,
             images: vec![],
         };
-
-        self.objects = objects;
     }
 
-    pub fn objects_mut(&mut self) -> &mut Vec<Object> {
-        &mut self.objects
-    }
-
-    pub fn draw(&mut self, ctx: &mut Context) {
+    pub fn draw(
+        &mut self,
+        ctx: &mut Context,
+        scene_data: &SceneData,
+        projection_matrix: Mat4,
+        view_matrix: Mat4,
+    ) {
         ctx.apply_pipeline(&self.pipeline);
         ctx.apply_bindings(&self.bindings);
 
-        let projection_matrix = *(self.projection_matrix.lock().unwrap());
-        let view_matrix = *(self.view_matrix.lock().unwrap());
+        let objects = scene_data.objects();
+        let visible_indices = scene_data.visible_objects();
 
-        // Calculate view-projection matrix and extract frustum
-        let vp_matrix = projection_matrix * view_matrix;
-        let frustum = Frustum::from_matrix(vp_matrix);
-
-        for object in &self.objects {
-            // Calculate AABB for this object
-            let aabb = object.calculate_aabb();
-
-            // Perform frustum culling
-            if !frustum.intersects_aabb_2d(aabb.min, aabb.max) {
-                continue;
-            }
+        // Only draw visible objects
+        for &index in visible_indices {
+            let object = &objects[index];
 
             ctx.apply_uniforms(&shader::Uniforms {
                 model_matrix: object.get_model_matrix(),
