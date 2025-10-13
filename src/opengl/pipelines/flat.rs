@@ -118,23 +118,17 @@ impl FlatPipeline {
                 continue;
             }
 
-            // Build model matrix: T * R * S
-            let translation_mat = Mat4::from_translation(object.translation.extend(0.0));
-            let rotation_mat = Mat4::from_rotation_z(object.rotation);
-            let scale_mat = Mat4::from_scale(object.scale.extend(1.0));
-            let model_matrix = translation_mat * rotation_mat * scale_mat;
-
             ctx.apply_uniforms(&shader::Uniforms {
-                model_matrix,
+                model_matrix: object.get_model_matrix(),
                 view_matrix,
                 projection_matrix,
-                colour: object.material.borrow().colour.into(),
+                colour: object.borrow_material().colour.into(),
                 selected: if object.selected { 1.0 } else { 0.0 },
             });
 
             ctx.draw(
-                object.mesh.borrow().buffer_offset.try_into().unwrap(),
-                (object.mesh.borrow().tris * 3).try_into().unwrap(),
+                object.borrow_mesh().buffer_offset.try_into().unwrap(),
+                (object.borrow_mesh().tris * 3).try_into().unwrap(),
                 1,
             );
         }

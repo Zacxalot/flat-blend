@@ -18,15 +18,57 @@ pub struct Material {
 }
 
 pub struct Object {
-    pub mesh: Rc<RefCell<Mesh>>,
-    pub translation: glam::Vec2,
-    pub rotation: f32,
-    pub scale: glam::Vec2,
-    pub material: Rc<RefCell<Material>>,
+    mesh: Rc<RefCell<Mesh>>,
+    translation: glam::Vec2,
+    rotation: f32,
+    scale: glam::Vec2,
+    material: Rc<RefCell<Material>>,
+    model_matrix: glam::Mat4,
     pub selected: bool,
 }
 
 impl Object {
+    pub fn new(
+        mesh: Rc<RefCell<Mesh>>,
+        translation: glam::Vec2,
+        rotation: f32,
+        scale: glam::Vec2,
+        material: Rc<RefCell<Material>>,
+    ) -> Object {
+        let mut obj = Object {
+            mesh,
+            translation,
+            rotation,
+            scale,
+            material,
+            selected: false,
+            model_matrix: glam::Mat4::IDENTITY,
+        };
+
+        obj.update_model_matrix();
+
+        obj
+    }
+
+    pub fn borrow_mesh(&self) -> std::cell::Ref<Mesh> {
+        self.mesh.borrow()
+    }
+
+    pub fn borrow_material(&self) -> std::cell::Ref<Material> {
+        self.material.borrow()
+    }
+
+    fn update_model_matrix(&mut self) {
+        let translation_mat = glam::Mat4::from_translation(self.translation.extend(0.0));
+        let rotation_mat = glam::Mat4::from_rotation_z(self.rotation);
+        let scale_mat = glam::Mat4::from_scale(self.scale.extend(1.0));
+        self.model_matrix = translation_mat * rotation_mat * scale_mat;
+    }
+
+    pub fn get_model_matrix(&self) -> glam::Mat4 {
+        self.model_matrix
+    }
+
     /// Calculate the axis-aligned bounding box for this object
     /// Assumes the mesh is a square with extents from -1 to 1
     pub fn calculate_aabb(&self) -> AABB2D {
@@ -38,8 +80,10 @@ impl Object {
     /// Check if a world-space point is inside this object's bounding box
     pub fn contains_point(&self, point: glam::Vec2) -> bool {
         let aabb = self.calculate_aabb();
-        point.x >= aabb.min.x && point.x <= aabb.max.x &&
-        point.y >= aabb.min.y && point.y <= aabb.max.y
+        point.x >= aabb.min.x
+            && point.x <= aabb.max.x
+            && point.y >= aabb.min.y
+            && point.y <= aabb.max.y
     }
 }
 

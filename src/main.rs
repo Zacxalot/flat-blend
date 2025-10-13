@@ -27,16 +27,15 @@ fn main() {
 
     for y in 0..500 {
         for x in 0..500 {
-            objects.push(Object {
-                mesh: mesh.clone(),
-                translation: Vec2::new(x as f32 * 250.0, y as f32 * 250.0),
-                rotation: 0.0,
-                scale: Vec2::new(100.0, 100.0),
-                material: Rc::new(RefCell::new(Material {
+            objects.push(Object::new(
+                mesh.clone(),
+                Vec2::new(x as f32 * 250.0, y as f32 * 250.0),
+                0.0,
+                Vec2::new(100.0, 100.0),
+                Rc::new(RefCell::new(Material {
                     colour: Colour::new(rng.random(), rng.random(), rng.random(), 1.0),
                 })),
-                selected: false,
-            });
+            ))
         }
     }
 
