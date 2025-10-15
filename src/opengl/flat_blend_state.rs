@@ -115,11 +115,12 @@ impl EventHandler for FlatBlendState {
         if let Some(middle_click) = self.mouse_state.get(&MouseButton::Middle) {
             if *middle_click {
                 let diff = mouse_position - self.last_mouse_position;
+                let zoom = *(self.zoom.lock().unwrap());
 
                 {
                     let mut position = self.position.lock().unwrap();
-                    position.x += diff.x;
-                    position.y -= diff.y;
+                    position.x += diff.x / zoom;
+                    position.y -= diff.y / zoom;
                 }
 
                 self.update_view_matrix();
@@ -130,9 +131,9 @@ impl EventHandler for FlatBlendState {
     }
 
     fn mouse_wheel_event(&mut self, _: &mut Context, dx: f32, dy: f32) {
-        if dy != 0.0 {
+        if dy != 0.0 && !self.egui_mq.egui_ctx().wants_pointer_input() {
             let mut zoom = self.zoom.lock().unwrap();
-            *zoom = (*zoom + dy / 1000.0).max(0.1).min(20.0);
+            *zoom = (*zoom + dy / 1000.0).max(0.001).min(20.0);
             drop(zoom);
             self.update_view_matrix();
         }

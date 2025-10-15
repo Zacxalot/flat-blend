@@ -145,7 +145,7 @@ mod shader {
 
         // Convert screen space to world space centered at screen center
         vec2 screenCenter = u_resolution / 2.0;
-        vec2 uv = (gl_FragCoord.xy - screenCenter - u_position.xy) / u_zoom;
+        vec2 uv = (gl_FragCoord.xy - screenCenter) / u_zoom - u_position.xy;
 
         float big = getGrid(uv, squareSize);
         float small = getGrid(uv, smallSquareSize);

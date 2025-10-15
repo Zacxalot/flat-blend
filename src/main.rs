@@ -46,6 +46,4 @@ fn main() {
         miniquad::conf::Conf::default(),
         |ctx: &mut miniquad::Context| Box::new(FlatBlendState::new(ctx, objects, vec![mesh])),
     );
-
-    // run_event_loop(event_loop);
 }
