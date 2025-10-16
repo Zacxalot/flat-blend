@@ -144,8 +144,8 @@ impl EventHandler for FlatBlendState {
     fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         self.egui_mq.mouse_button_down_event(ctx, button, x, y);
 
-        // Handle left-click selection (only if egui doesn't want the input)
-        if button == MouseButton::Left && !self.egui_mq.egui_ctx().wants_pointer_input() {
+        // Handle right-click selection (only if egui doesn't want the input)
+        if button == MouseButton::Right && !self.egui_mq.egui_ctx().wants_pointer_input() {
             let screen_size = ctx.screen_size();
             let world_pos = screen_to_world(
                 Vec2::new(x, y),
