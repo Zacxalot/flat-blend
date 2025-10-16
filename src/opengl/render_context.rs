@@ -51,8 +51,7 @@ impl RenderContext {
         );
         outline_pipeline.update(ctx, meshes);
 
-        let mut scene_data = SceneData::new();
-        scene_data.set_objects(objects);
+        let scene_data = SceneData::new(objects);
 
         let mut render_context = Self {
             scene_data,

@@ -72,7 +72,10 @@ use miniquad::{
 
 use crate::{
     data::vertex::{Index, Vertex},
-    opengl::{scene::SceneData, structs::Mesh},
+    opengl::{
+        scene::{ObjectKey, SceneData},
+        structs::Mesh,
+    },
 };
 
 /// Pipeline for rendering object outlines using edge detection
@@ -287,10 +290,10 @@ impl OutlinePipeline {
         view_matrix: Mat4,
     ) {
         let objects = scene_data.objects();
-        let selected_indices = scene_data.visible_selected_objects();
+        let selected_keys = scene_data.visible_selected_objects();
 
         // If no objects are selected, skip rendering
-        if selected_indices.is_empty() {
+        if selected_keys.is_empty() {
             return;
         }
 
@@ -304,8 +307,8 @@ impl OutlinePipeline {
         ctx.apply_bindings(&self.id_bindings);
 
         // Render only selected objects with their unique IDs
-        for (id_index, &obj_index) in selected_indices.iter().enumerate() {
-            let object = &objects[obj_index];
+        for (id_index, &key) in selected_keys.iter().enumerate() {
+            let object = &objects[key];
 
             // Convert object index to a unique color ID
             // Use (id_index + 1) so we don't use pure black (0,0,0) as an ID

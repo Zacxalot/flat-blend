@@ -16,6 +16,7 @@ use crate::ui::viewport::ViewportUI;
 use super::{
     matrices::get_ortho_matrix,
     render_context::RenderContext,
+    scene::ObjectKey,
     structs::{Mesh, Object},
 };
 
@@ -86,23 +87,31 @@ impl FlatBlendState {
 
     /// Select object at the given world position
     fn select_object_at(&mut self, world_pos: Vec2, add_to_selection: bool) {
-        let objects = self.render_context.scene_data.objects_mut();
+        let scene_data = &mut self.render_context.scene_data;
 
         // If not adding to selection, clear previous selection
         if !add_to_selection {
-            for obj in objects.iter_mut() {
+            for (_, obj) in scene_data.objects_mut().iter_mut() {
                 obj.selected = false;
             }
         }
 
-        // Find and select the topmost object at this position
-        // Iterate in reverse to get the top-most object first
-        for obj in objects.iter_mut().rev() {
-            if obj.contains_point(world_pos) {
-                obj.selected = !obj.selected; // Toggle if adding to selection
-                if !add_to_selection {
-                    break; // Only select one if not multi-selecting
+        // Find the topmost object at this position by iterating in reverse order
+        // object_order goes from bottom to top, so we reverse to check top first
+        let mut selected_key: Option<ObjectKey> = None;
+        for &key in scene_data.object_order().iter().rev() {
+            if let Some(obj) = scene_data.objects().get(key) {
+                if obj.contains_point(world_pos) {
+                    selected_key = Some(key);
+                    break; // Found the topmost object
                 }
+            }
+        }
+
+        // Toggle selection on the found object
+        if let Some(key) = selected_key {
+            if let Some(obj) = scene_data.objects_mut().get_mut(key) {
+                obj.selected = !obj.selected;
             }
         }
     }

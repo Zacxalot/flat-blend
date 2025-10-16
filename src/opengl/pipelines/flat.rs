@@ -12,7 +12,10 @@ use miniquad::{
 
 use crate::{
     data::vertex::{Index, Vertex},
-    opengl::{scene::SceneData, structs::Mesh},
+    opengl::{
+        scene::{ObjectKey, SceneData},
+        structs::Mesh,
+    },
 };
 
 pub struct FlatPipeline {
@@ -93,11 +96,11 @@ impl FlatPipeline {
         ctx.apply_bindings(&self.bindings);
 
         let objects = scene_data.objects();
-        let visible_indices = scene_data.visible_objects();
+        let visible_keys = scene_data.visible_objects();
 
         // Only draw visible objects
-        for &index in visible_indices {
-            let object = &objects[index];
+        for &key in visible_keys {
+            let object = &objects[key];
 
             ctx.apply_uniforms(&shader::Uniforms {
                 model_matrix: object.get_model_matrix(),
