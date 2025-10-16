@@ -8,7 +8,7 @@ use glam::Mat4;
 use miniquad::Context;
 
 use super::{
-    pipelines::{flat::FlatPipeline, grid::GridPipeline},
+    pipelines::{flat::FlatPipeline, grid::GridPipeline, outline::OutlinePipeline},
     scene::SceneData,
     structs::{Mesh, Object},
 };
@@ -18,6 +18,7 @@ pub struct RenderContext {
     pub scene_data: SceneData,
     pub flat_pipeline: FlatPipeline,
     pub grid_pipeline: GridPipeline,
+    pub outline_pipeline: OutlinePipeline,
     projection_matrix: Arc<Mutex<Mat4>>,
     view_matrix: Arc<Mutex<Mat4>>,
 }
@@ -31,13 +32,24 @@ impl RenderContext {
         position: Arc<Mutex<glam::Vec2>>,
         objects: Vec<Object>,
         meshes: Vec<Rc<RefCell<Mesh>>>,
+        width: u32,
+        height: u32,
     ) -> Self {
         let mut flat_pipeline =
             FlatPipeline::new(ctx, projection_matrix.clone(), view_matrix.clone());
         let grid_pipeline = GridPipeline::new(ctx, position, zoom);
 
         // Update the flat pipeline with mesh data
-        flat_pipeline.update(ctx, meshes);
+        flat_pipeline.update(ctx, meshes.clone());
+
+        let mut outline_pipeline = OutlinePipeline::new(
+            ctx,
+            projection_matrix.clone(),
+            view_matrix.clone(),
+            width,
+            height,
+        );
+        outline_pipeline.update(ctx, meshes);
 
         let mut scene_data = SceneData::new();
         scene_data.set_objects(objects);
@@ -46,6 +58,7 @@ impl RenderContext {
             scene_data,
             flat_pipeline,
             grid_pipeline,
+            outline_pipeline,
             projection_matrix,
             view_matrix,
         };
@@ -73,5 +86,12 @@ impl RenderContext {
         self.grid_pipeline.draw(ctx);
         self.flat_pipeline
             .draw(ctx, &self.scene_data, projection_matrix, view_matrix);
+        self.outline_pipeline
+            .draw(ctx, &self.scene_data, projection_matrix, view_matrix);
+    }
+
+    /// Handle window resize
+    pub fn resize(&mut self, ctx: &mut Context, width: u32, height: u32) {
+        self.outline_pipeline.resize(ctx, width, height);
     }
 }

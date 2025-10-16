@@ -56,6 +56,8 @@ impl FlatBlendState {
             position.clone(),
             objects,
             meshes,
+            width as u32,
+            height as u32,
         );
 
         FlatBlendState {
@@ -182,10 +184,13 @@ impl EventHandler for FlatBlendState {
         self.egui_mq.key_up_event(keycode, keymods);
     }
 
-    fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) {
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
         let mut projection_matrix = self.projection_matrix.lock().unwrap();
         *projection_matrix = get_ortho_matrix(width, height);
         drop(projection_matrix);
+
+        // Resize pipelines
+        self.render_context.resize(ctx, width as u32, height as u32);
 
         // Update scene visibility when projection changes
         self.render_context.update_visibility();
